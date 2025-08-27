@@ -32,28 +32,28 @@ const PhotoBooth = () => {
 
   const frames = {
     birthday: [
-      { id: 'birthday1', name: 'Birthday Stars', category: 'birthday' },
-      { id: 'birthday2', name: 'Party Time', category: 'birthday' },
-      { id: 'birthday3', name: 'Cake & Balloons', category: 'birthday' },
-      { id: 'birthday4', name: 'Confetti', category: 'birthday' },
+      { id: 'birthday1', name: 'Birthday Stars', category: 'birthday', color: 'from-yellow-400 to-orange-400' },
+      { id: 'birthday2', name: 'Party Time', category: 'birthday', color: 'from-pink-400 to-red-400' },
+      { id: 'birthday3', name: 'Cake & Balloons', category: 'birthday', color: 'from-purple-400 to-pink-400' },
+      { id: 'birthday4', name: 'Confetti', category: 'birthday', color: 'from-rainbow' },
     ],
     wedding: [
-      { id: 'wedding1', name: 'Elegant Gold', category: 'wedding' },
-      { id: 'wedding2', name: 'Rose Garden', category: 'wedding' },
-      { id: 'wedding3', name: 'Classic White', category: 'wedding' },
-      { id: 'wedding4', name: 'Royal Crown', category: 'wedding' },
+      { id: 'wedding1', name: 'Elegant Gold', category: 'wedding', color: 'from-yellow-600 to-yellow-400' },
+      { id: 'wedding2', name: 'Rose Garden', category: 'wedding', color: 'from-rose-400 to-pink-400' },
+      { id: 'wedding3', name: 'Classic White', category: 'wedding', color: 'from-gray-100 to-white' },
+      { id: 'wedding4', name: 'Royal Crown', category: 'wedding', color: 'from-purple-600 to-purple-400' },
     ],
     nature: [
-      { id: 'nature1', name: 'Floral Border', category: 'nature' },
-      { id: 'nature2', name: 'Sunset Glow', category: 'nature' },
-      { id: 'nature3', name: 'Forest Frame', category: 'nature' },
-      { id: 'nature4', name: 'Ocean Waves', category: 'nature' },
+      { id: 'nature1', name: 'Floral Border', category: 'nature', color: 'from-green-400 to-emerald-400' },
+      { id: 'nature2', name: 'Sunset Glow', category: 'nature', color: 'from-orange-400 to-red-400' },
+      { id: 'nature3', name: 'Forest Frame', category: 'nature', color: 'from-green-600 to-green-400' },
+      { id: 'nature4', name: 'Ocean Waves', category: 'nature', color: 'from-blue-400 to-cyan-400' },
     ],
     fun: [
-      { id: 'fun1', name: 'Neon Lights', category: 'fun' },
-      { id: 'fun2', name: 'Comic Style', category: 'fun' },
-      { id: 'fun3', name: 'Disco Ball', category: 'fun' },
-      { id: 'fun4', name: 'Retro Wave', category: 'fun' },
+      { id: 'fun1', name: 'Neon Lights', category: 'fun', color: 'from-cyan-400 to-blue-400' },
+      { id: 'fun2', name: 'Comic Style', category: 'fun', color: 'from-yellow-400 to-red-400' },
+      { id: 'fun3', name: 'Disco Ball', category: 'fun', color: 'from-purple-400 to-pink-400' },
+      { id: 'fun4', name: 'Retro Wave', category: 'fun', color: 'from-pink-400 to-purple-400' },
     ],
   };
 
@@ -76,67 +76,276 @@ const PhotoBooth = () => {
       case 'birthday1':
         // Birthday Stars frame
         ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 8;
-        ctx.strokeRect(10, 10, width - 20, height - 20);
-        // Draw stars
-        for (let i = 0; i < 20; i++) {
-          const x = Math.random() * width;
-          const y = Math.random() * height;
-          ctx.fillStyle = '#FFD700';
-          ctx.font = '20px Arial';
-          ctx.fillText('⭐', x, y);
+        ctx.lineWidth = 12;
+        ctx.strokeRect(8, 8, width - 16, height - 16);
+        // Inner border
+        ctx.strokeStyle = '#FFA500';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(20, 20, width - 40, height - 40);
+        // Draw stars around border
+        ctx.fillStyle = '#FFD700';
+        ctx.font = '30px Arial';
+        for (let i = 0; i < 15; i++) {
+          const x = 30 + Math.random() * (width - 60);
+          const y = 50 + Math.random() * (height - 100);
+          if (x < 80 || x > width - 80 || y < 80 || y > height - 80) {
+            ctx.fillText('⭐', x, y);
+          }
         }
         break;
         
       case 'birthday2':
         // Party Time frame
-        ctx.strokeStyle = '#FF69B4';
+        ctx.strokeStyle = '#FF1493';
+        ctx.lineWidth = 15;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+        // Party text
+        ctx.fillStyle = '#FF1493';
+        ctx.font = 'bold 28px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('🎉 PARTY TIME! 🎉', width/2, 50);
+        ctx.fillText('🎊 CELEBRATE! 🎊', width/2, height - 20);
+        ctx.textAlign = 'left';
+        break;
+
+      case 'birthday3':
+        // Cake & Balloons
+        ctx.strokeStyle = '#DA70D6';
         ctx.lineWidth = 10;
+        ctx.strokeRect(12, 12, width - 24, height - 24);
+        // Add decorations
+        ctx.fillStyle = '#DA70D6';
+        ctx.font = '25px Arial';
+        // Balloons
+        ctx.fillText('🎈🎈', 20, 50);
+        ctx.fillText('🎈🎈', width - 80, 50);
+        // Cake
+        ctx.fillText('🎂', width/2 - 15, 50);
+        ctx.fillText('🍰🧁', 20, height - 20);
+        ctx.fillText('🍰🧁', width - 80, height - 20);
+        break;
+
+      case 'birthday4':
+        // Confetti
+        ctx.strokeStyle = '#FF6347';
+        ctx.lineWidth = 8;
         ctx.strokeRect(15, 15, width - 30, height - 30);
-        ctx.fillStyle = '#FF69B4';
-        ctx.font = 'bold 24px Arial';
-        ctx.fillText('🎉 PARTY TIME! 🎉', 20, 40);
+        // Confetti particles
+        const colors = ['#FF6347', '#FFD700', '#FF1493', '#00CED1', '#32CD32'];
+        for (let i = 0; i < 50; i++) {
+          ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+          const x = Math.random() * width;
+          const y = Math.random() * height;
+          ctx.fillRect(x, y, 8, 8);
+        }
         break;
         
       case 'wedding1':
         // Elegant Gold frame
         ctx.strokeStyle = '#DAA520';
-        ctx.lineWidth = 12;
+        ctx.lineWidth = 16;
         ctx.strokeRect(8, 8, width - 16, height - 16);
         ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(20, 20, width - 40, height - 40);
+        ctx.lineWidth = 6;
+        ctx.strokeRect(24, 24, width - 48, height - 48);
+        // Corner decorations
+        ctx.fillStyle = '#FFD700';
+        ctx.font = '20px Arial';
+        ctx.fillText('✨', 15, 35);
+        ctx.fillText('✨', width - 35, 35);
+        ctx.fillText('✨', 15, height - 15);
+        ctx.fillText('✨', width - 35, height - 15);
+        break;
+
+      case 'wedding2':
+        // Rose Garden
+        ctx.strokeStyle = '#DC143C';
+        ctx.lineWidth = 12;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+        // Roses around border
+        ctx.fillStyle = '#DC143C';
+        ctx.font = '22px Arial';
+        for (let i = 0; i < 12; i++) {
+          const x = 30 + Math.random() * (width - 60);
+          const y = 40 + Math.random() * (height - 80);
+          if (x < 60 || x > width - 60 || y < 60 || y > height - 60) {
+            ctx.fillText('🌹', x, y);
+          }
+        }
+        break;
+
+      case 'wedding3':
+        // Classic White
+        ctx.strokeStyle = '#F5F5F5';
+        ctx.lineWidth = 20;
+        ctx.strokeRect(5, 5, width - 10, height - 10);
+        ctx.strokeStyle = '#E6E6FA';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(25, 25, width - 50, height - 50);
+        break;
+
+      case 'wedding4':
+        // Royal Crown
+        ctx.strokeStyle = '#8A2BE2';
+        ctx.lineWidth = 14;
+        ctx.strokeRect(12, 12, width - 24, height - 24);
+        ctx.fillStyle = '#8A2BE2';
+        ctx.font = '25px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('👑', width/2, 45);
+        ctx.fillText('💎', 30, height/2);
+        ctx.fillText('💎', width - 30, height/2);
+        ctx.textAlign = 'left';
         break;
         
       case 'nature1':
         // Floral Border
         ctx.strokeStyle = '#228B22';
-        ctx.lineWidth = 6;
+        ctx.lineWidth = 10;
         ctx.strokeRect(12, 12, width - 24, height - 24);
-        // Draw flowers
-        for (let i = 0; i < 15; i++) {
-          const x = Math.random() * width;
-          const y = Math.random() * height;
-          if (x < 50 || x > width - 50 || y < 50 || y > height - 50) {
-            ctx.fillStyle = '#FF69B4';
-            ctx.font = '16px Arial';
-            ctx.fillText('🌸', x, y);
+        // Flowers and leaves
+        ctx.fillStyle = '#228B22';
+        ctx.font = '20px Arial';
+        const flowers = ['🌸', '🌺', '🌻', '🍀', '🌿'];
+        for (let i = 0; i < 20; i++) {
+          const x = 25 + Math.random() * (width - 50);
+          const y = 35 + Math.random() * (height - 70);
+          if (x < 80 || x > width - 80 || y < 80 || y > height - 80) {
+            const flower = flowers[Math.floor(Math.random() * flowers.length)];
+            ctx.fillText(flower, x, y);
           }
+        }
+        break;
+
+      case 'nature2':
+        // Sunset Glow
+        ctx.strokeStyle = '#FF4500';
+        ctx.lineWidth = 12;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+        // Gradient effect
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, 'rgba(255, 69, 0, 0.3)');
+        gradient.addColorStop(1, 'rgba(255, 140, 0, 0.3)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(22, 22, width - 44, height - 44);
+        break;
+
+      case 'nature3':
+        // Forest Frame
+        ctx.strokeStyle = '#006400';
+        ctx.lineWidth = 14;
+        ctx.strokeRect(8, 8, width - 16, height - 16);
+        ctx.fillStyle = '#228B22';
+        ctx.font = '18px Arial';
+        const trees = ['🌲', '🌳', '🍃'];
+        for (let i = 0; i < 15; i++) {
+          const x = 20 + Math.random() * (width - 40);
+          const y = 30 + Math.random() * (height - 60);
+          if (x < 60 || x > width - 60 || y < 60 || y > height - 60) {
+            const tree = trees[Math.floor(Math.random() * trees.length)];
+            ctx.fillText(tree, x, y);
+          }
+        }
+        break;
+
+      case 'nature4':
+        // Ocean Waves
+        ctx.strokeStyle = '#1E90FF';
+        ctx.lineWidth = 12;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+        // Wave pattern
+        ctx.strokeStyle = '#00CED1';
+        ctx.lineWidth = 4;
+        for (let i = 0; i < 5; i++) {
+          ctx.beginPath();
+          ctx.moveTo(22, 30 + i * 20);
+          for (let x = 22; x < width - 22; x += 20) {
+            ctx.lineTo(x + 10, 40 + i * 20);
+            ctx.lineTo(x + 20, 30 + i * 20);
+          }
+          ctx.stroke();
         }
         break;
         
       case 'fun1':
         // Neon Lights
         ctx.strokeStyle = '#00FFFF';
-        ctx.lineWidth = 6;
+        ctx.lineWidth = 8;
         ctx.strokeRect(10, 10, width - 20, height - 20);
         ctx.strokeStyle = '#FF00FF';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(15, 15, width - 30, height - 30);
+        ctx.lineWidth = 4;
+        ctx.strokeRect(18, 18, width - 36, height - 36);
+        ctx.strokeStyle = '#00FF00';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(26, 26, width - 52, height - 52);
+        break;
+
+      case 'fun2':
+        // Comic Style
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(8, 8, width - 16, height - 16);
+        // Comic bubbles
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 24px Arial';
+        ctx.fillText('POW!', 20, 40);
+        ctx.fillText('ZAP!', width - 70, height - 20);
+        // Dots pattern
+        ctx.fillStyle = '#FF0000';
+        for (let i = 0; i < 30; i++) {
+          const x = Math.random() * width;
+          const y = Math.random() * height;
+          if (x < 50 || x > width - 50 || y < 50 || y > height - 50) {
+            ctx.fillRect(x, y, 4, 4);
+          }
+        }
+        break;
+
+      case 'fun3':
+        // Disco Ball
+        ctx.strokeStyle = '#8B008B';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(12, 12, width - 24, height - 24);
+        // Disco elements
+        ctx.fillStyle = '#FFD700';
+        ctx.font = '20px Arial';
+        ctx.fillText('🕺', 25, 45);
+        ctx.fillText('💃', width - 45, 45);
+        ctx.fillText('🎵', 25, height - 25);
+        ctx.fillText('🎶', width - 45, height - 25);
+        // Sparkles
+        ctx.fillStyle = '#FFFFFF';
+        for (let i = 0; i < 20; i++) {
+          const x = Math.random() * width;
+          const y = Math.random() * height;
+          ctx.fillText('✨', x, y);
+        }
+        break;
+
+      case 'fun4':
+        // Retro Wave
+        ctx.strokeStyle = '#FF1493';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+        // Retro grid pattern
+        ctx.strokeStyle = '#00FFFF';
+        ctx.lineWidth = 2;
+        for (let i = 30; i < width - 30; i += 30) {
+          ctx.beginPath();
+          ctx.moveTo(i, 22);
+          ctx.lineTo(i, height - 22);
+          ctx.stroke();
+        }
+        for (let i = 30; i < height - 30; i += 30) {
+          ctx.beginPath();
+          ctx.moveTo(22, i);
+          ctx.lineTo(width - 22, i);
+          ctx.stroke();
+        }
         break;
         
       default:
-        // Default colored border
+        // Default frame
         ctx.strokeStyle = '#FF6B6B';
         ctx.lineWidth = 8;
         ctx.strokeRect(10, 10, width - 20, height - 20);
@@ -227,6 +436,9 @@ const PhotoBooth = () => {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
+    // Reset filter
+    context.filter = 'none';
+    
     // Apply effect
     const effect = effects.find(e => e.id === selectedEffect);
     if (effect && effect.filter !== 'none') {
@@ -235,6 +447,9 @@ const PhotoBooth = () => {
     
     // Draw video
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Reset filter for frame drawing
+    context.filter = 'none';
     
     // Apply frame if selected
     if (selectedFrame !== 'none') {
@@ -502,7 +717,7 @@ const PhotoBooth = () => {
               onClick={() => setSelectedFrame('wedding1')}
               className={`p-3 rounded-xl border transition-all ${
                 selectedFrame === 'wedding1'
-                  ? 'border-gold bg-yellow-600/20 text-yellow-400'
+                  ? 'border-yellow-600 bg-yellow-600/20 text-yellow-400'
                   : 'border-white/20 bg-white/5 text-gray-300'
               }`}
             >
@@ -541,7 +756,7 @@ const PhotoBooth = () => {
         <div key={category} className="bg-black/20 backdrop-blur-lg rounded-3xl p-6 border border-white/10">
           <h3 className="text-2xl font-bold text-white mb-6 capitalize flex items-center gap-2">
             {category === 'birthday' && <Gift className="text-yellow-400" />}
-            {category === 'wedding' && <Crown className="text-gold" />}
+            {category === 'wedding' && <Crown className="text-yellow-400" />}
             {category === 'nature' && <Sparkles className="text-green-400" />}
             {category === 'fun' && <Zap className="text-cyan-400" />}
             {category} Frames
@@ -555,19 +770,62 @@ const PhotoBooth = () => {
                   setSelectedFrame(frame.id);
                   setCurrentPage('camera');
                 }}
-                className={`aspect-square rounded-2xl border-2 transition-all duration-200 transform hover:scale-105 p-4 ${
+                className={`aspect-square rounded-2xl border-2 transition-all duration-200 transform hover:scale-105 p-4 relative overflow-hidden ${
                   selectedFrame === frame.id
                     ? 'border-pink-500 bg-pink-500/20'
                     : 'border-white/20 bg-white/5 hover:border-white/40'
                 }`}
               >
-                <div className="w-full h-full bg-gradient-to-br from-gray-600 to-gray-800 rounded-lg flex items-center justify-center relative overflow-hidden">
-                  <div className="text-white text-sm font-medium text-center">
+                <div className={`w-full h-full bg-gradient-to-br ${frame.color} rounded-lg flex items-center justify-center relative overflow-hidden`}>
+                  <div className="text-white text-sm font-medium text-center z-10">
                     {frame.name}
                   </div>
-                  {/* Frame preview mockup */}
-                  <div className="absolute inset-2 border-2 border-white/30 rounded"></div>
+                  
+                  {/* Frame preview patterns */}
+                  <div className="absolute inset-0">
+                    {frame.id.includes('birthday') && (
+                      <div className="absolute inset-2 border-4 border-yellow-400 rounded">
+                        <div className="absolute top-1 left-1 text-yellow-400">⭐</div>
+                        <div className="absolute top-1 right-1 text-yellow-400">🎉</div>
+                        <div className="absolute bottom-1 left-1 text-yellow-400">🎂</div>
+                        <div className="absolute bottom-1 right-1 text-yellow-400">🎈</div>
+                      </div>
+                    )}
+                    
+                    {frame.id.includes('wedding') && (
+                      <div className="absolute inset-2 border-4 border-yellow-200 rounded">
+                        <div className="absolute top-1 left-1 text-yellow-200">💍</div>
+                        <div className="absolute top-1 right-1 text-yellow-200">👑</div>
+                        <div className="absolute bottom-1 left-1 text-yellow-200">🌹</div>
+                        <div className="absolute bottom-1 right-1 text-yellow-200">✨</div>
+                      </div>
+                    )}
+                    
+                    {frame.id.includes('nature') && (
+                      <div className="absolute inset-2 border-4 border-green-400 rounded">
+                        <div className="absolute top-1 left-1 text-green-400">🌸</div>
+                        <div className="absolute top-1 right-1 text-green-400">🌿</div>
+                        <div className="absolute bottom-1 left-1 text-green-400">🌺</div>
+                        <div className="absolute bottom-1 right-1 text-green-400">🍀</div>
+                      </div>
+                    )}
+                    
+                    {frame.id.includes('fun') && (
+                      <div className="absolute inset-2 border-4 border-cyan-400 rounded">
+                        <div className="absolute top-1 left-1 text-cyan-400">🎵</div>
+                        <div className="absolute top-1 right-1 text-cyan-400">✨</div>
+                        <div className="absolute bottom-1 left-1 text-cyan-400">🕺</div>
+                        <div className="absolute bottom-1 right-1 text-cyan-400">💫</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
+                
+                {selectedFrame === frame.id && (
+                  <div className="absolute top-2 right-2 bg-pink-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">
+                    ✓
+                  </div>
+                )}
               </button>
             ))}
           </div>
