@@ -932,7 +932,7 @@ const PhotoBooth = () => {
           </div>
         </nav>
 
-        {/* Page Content */}
+        {/* Page Content /}
         <main>
           {currentPage === 'home' && renderHomePage()}
           {currentPage === 'camera' && renderCameraPage()}
