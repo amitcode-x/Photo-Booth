@@ -1,0 +1,693 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Camera, Download, RotateCcw, Sparkles, Palette, Sun, Moon, Zap, Heart, Star, Home, Image, Smile, Gift, Music, Crown, Flame, Coffee } from 'lucide-react';
+
+const PhotoBooth = () => {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const frameCanvasRef = useRef(null);
+  const [stream, setStream] = useState(null);
+  const [capturedPhoto, setCapturedPhoto] = useState(null);
+  const [selectedEffect, setSelectedEffect] = useState('none');
+  const [selectedFrame, setSelectedFrame] = useState('none');
+  const [currentPage, setCurrentPage] = useState('home');
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [cameraStarted, setCameraStarted] = useState(false);
+  const [facingMode, setFacingMode] = useState('user');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [gallery, setGallery] = useState([]);
+
+  const effects = [
+    { id: 'none', name: 'Original', icon: Camera, filter: 'none' },
+    { id: 'sepia', name: 'Vintage', icon: Sun, filter: 'sepia(100%)' },
+    { id: 'grayscale', name: 'B&W', icon: Moon, filter: 'grayscale(100%)' },
+    { id: 'blur', name: 'Dreamy', icon: Sparkles, filter: 'blur(2px)' },
+    { id: 'saturate', name: 'Vibrant', icon: Palette, filter: 'saturate(200%)' },
+    { id: 'contrast', name: 'Drama', icon: Zap, filter: 'contrast(150%)' },
+    { id: 'hue', name: 'Rainbow', icon: Heart, filter: 'hue-rotate(90deg)' },
+    { id: 'invert', name: 'Negative', icon: Star, filter: 'invert(100%)' },
+    { id: 'warm', name: 'Warm', icon: Coffee, filter: 'sepia(30%) saturate(120%)' },
+    { id: 'cool', name: 'Cool', icon: Flame, filter: 'hue-rotate(180deg) saturate(120%)' },
+  ];
+
+  const frames = {
+    birthday: [
+      { id: 'birthday1', name: 'Birthday Stars', category: 'birthday' },
+      { id: 'birthday2', name: 'Party Time', category: 'birthday' },
+      { id: 'birthday3', name: 'Cake & Balloons', category: 'birthday' },
+      { id: 'birthday4', name: 'Confetti', category: 'birthday' },
+    ],
+    wedding: [
+      { id: 'wedding1', name: 'Elegant Gold', category: 'wedding' },
+      { id: 'wedding2', name: 'Rose Garden', category: 'wedding' },
+      { id: 'wedding3', name: 'Classic White', category: 'wedding' },
+      { id: 'wedding4', name: 'Royal Crown', category: 'wedding' },
+    ],
+    nature: [
+      { id: 'nature1', name: 'Floral Border', category: 'nature' },
+      { id: 'nature2', name: 'Sunset Glow', category: 'nature' },
+      { id: 'nature3', name: 'Forest Frame', category: 'nature' },
+      { id: 'nature4', name: 'Ocean Waves', category: 'nature' },
+    ],
+    fun: [
+      { id: 'fun1', name: 'Neon Lights', category: 'fun' },
+      { id: 'fun2', name: 'Comic Style', category: 'fun' },
+      { id: 'fun3', name: 'Disco Ball', category: 'fun' },
+      { id: 'fun4', name: 'Retro Wave', category: 'fun' },
+    ],
+  };
+
+  const pages = [
+    { id: 'home', name: 'Home', icon: Home },
+    { id: 'camera', name: 'Camera', icon: Camera },
+    { id: 'frames', name: 'Frames', icon: Image },
+    { id: 'gallery', name: 'Gallery', icon: Smile },
+  ];
+
+  const drawFrame = useCallback((canvas, frameId) => {
+    const ctx = canvas.getContext('2d');
+    const { width, height } = canvas;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    // Frame drawing logic
+    switch (frameId) {
+      case 'birthday1':
+        // Birthday Stars frame
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+        // Draw stars
+        for (let i = 0; i < 20; i++) {
+          const x = Math.random() * width;
+          const y = Math.random() * height;
+          ctx.fillStyle = '#FFD700';
+          ctx.font = '20px Arial';
+          ctx.fillText('⭐', x, y);
+        }
+        break;
+        
+      case 'birthday2':
+        // Party Time frame
+        ctx.strokeStyle = '#FF69B4';
+        ctx.lineWidth = 10;
+        ctx.strokeRect(15, 15, width - 30, height - 30);
+        ctx.fillStyle = '#FF69B4';
+        ctx.font = 'bold 24px Arial';
+        ctx.fillText('🎉 PARTY TIME! 🎉', 20, 40);
+        break;
+        
+      case 'wedding1':
+        // Elegant Gold frame
+        ctx.strokeStyle = '#DAA520';
+        ctx.lineWidth = 12;
+        ctx.strokeRect(8, 8, width - 16, height - 16);
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(20, 20, width - 40, height - 40);
+        break;
+        
+      case 'nature1':
+        // Floral Border
+        ctx.strokeStyle = '#228B22';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(12, 12, width - 24, height - 24);
+        // Draw flowers
+        for (let i = 0; i < 15; i++) {
+          const x = Math.random() * width;
+          const y = Math.random() * height;
+          if (x < 50 || x > width - 50 || y < 50 || y > height - 50) {
+            ctx.fillStyle = '#FF69B4';
+            ctx.font = '16px Arial';
+            ctx.fillText('🌸', x, y);
+          }
+        }
+        break;
+        
+      case 'fun1':
+        // Neon Lights
+        ctx.strokeStyle = '#00FFFF';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+        ctx.strokeStyle = '#FF00FF';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(15, 15, width - 30, height - 30);
+        break;
+        
+      default:
+        // Default colored border
+        ctx.strokeStyle = '#FF6B6B';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(10, 10, width - 20, height - 20);
+    }
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera not supported by this browser');
+      }
+
+      let mediaStream;
+      
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        });
+      } catch (err) {
+        console.log('Trying basic constraints...');
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode },
+          audio: false
+        });
+      }
+      
+      if (videoRef.current && mediaStream) {
+        videoRef.current.srcObject = mediaStream;
+        
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play();
+          setStream(mediaStream);
+          setCameraStarted(true);
+          setLoading(false);
+        };
+      }
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      setLoading(false);
+      
+      let errorMessage = 'Camera access failed. ';
+      
+      if (err.name === 'NotAllowedError') {
+        errorMessage += 'Please allow camera permissions and refresh the page.';
+      } else if (err.name === 'NotFoundError') {
+        errorMessage += 'No camera found on this device.';
+      } else if (err.name === 'NotSupportedError') {
+        errorMessage += 'Camera not supported by this browser.';
+      } else {
+        errorMessage += 'Please check your camera and try again.';
+      }
+      
+      setError(errorMessage);
+    }
+  }, [facingMode]);
+
+  const stopCamera = useCallback(() => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+      setCameraStarted(false);
+    }
+  }, [stream]);
+
+  const switchCamera = useCallback(() => {
+    stopCamera();
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+  }, [stopCamera]);
+
+  const capturePhoto = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    setIsCapturing(true);
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const frameCanvas = frameCanvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Apply effect
+    const effect = effects.find(e => e.id === selectedEffect);
+    if (effect && effect.filter !== 'none') {
+      context.filter = effect.filter;
+    }
+    
+    // Draw video
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Apply frame if selected
+    if (selectedFrame !== 'none') {
+      frameCanvas.width = canvas.width;
+      frameCanvas.height = canvas.height;
+      drawFrame(frameCanvas, selectedFrame);
+      
+      // Composite frame onto photo
+      context.globalCompositeOperation = 'source-over';
+      context.drawImage(frameCanvas, 0, 0);
+    }
+    
+    const photoData = canvas.toDataURL('image/png');
+    setCapturedPhoto(photoData);
+    
+    // Add to gallery
+    const newPhoto = {
+      id: Date.now(),
+      data: photoData,
+      effect: selectedEffect,
+      frame: selectedFrame,
+      timestamp: new Date().toLocaleString()
+    };
+    setGallery(prev => [newPhoto, ...prev]);
+    
+    setTimeout(() => setIsCapturing(false), 300);
+  }, [selectedEffect, selectedFrame, drawFrame]);
+
+  const downloadPhoto = useCallback((photoData, filename) => {
+    const link = document.createElement('a');
+    link.download = filename || `photo-booth-${Date.now()}.png`;
+    link.href = photoData;
+    link.click();
+  }, []);
+
+  const downloadAllPhotos = useCallback(() => {
+    gallery.forEach((photo, index) => {
+      setTimeout(() => {
+        downloadPhoto(photo.data, `photo-${index + 1}-${photo.timestamp.replace(/[/:]/g, '-')}.png`);
+      }, index * 500);
+    });
+  }, [gallery, downloadPhoto]);
+
+  const retakePhoto = useCallback(() => {
+    setCapturedPhoto(null);
+  }, []);
+
+  const getFilterStyle = (effectId) => {
+    const effect = effects.find(e => e.id === effectId);
+    return effect ? { filter: effect.filter } : {};
+  };
+
+  useEffect(() => {
+    if (facingMode && !cameraStarted && currentPage === 'camera') {
+      startCamera();
+    }
+  }, [facingMode, startCamera, cameraStarted, currentPage]);
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
+
+  const renderHomePage = () => (
+    <div className="text-center space-y-8">
+      <div className="mb-12">
+        <h1 className="text-6xl md:text-8xl font-bold text-white mb-6 bg-clip-text text-transparent bg-gradient-to-r from-pink-400 via-purple-500 to-cyan-400 animate-pulse">
+          📸 Photo Booth Pro
+        </h1>
+        <p className="text-xl text-gray-300 mb-8">Professional photo booth with amazing effects and frames</p>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
+        <div className="bg-gradient-to-br from-pink-500/20 to-purple-600/20 backdrop-blur-lg rounded-3xl p-6 border border-pink-500/20 hover:border-pink-400/40 transition-all duration-300 transform hover:scale-105">
+          <Camera size={48} className="mx-auto mb-4 text-pink-400" />
+          <h3 className="text-xl font-bold text-white mb-2">Smart Camera</h3>
+          <p className="text-gray-300 text-sm">High-quality camera with auto-focus and smart settings</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-500/20 to-blue-600/20 backdrop-blur-lg rounded-3xl p-6 border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300 transform hover:scale-105">
+          <Sparkles size={48} className="mx-auto mb-4 text-purple-400" />
+          <h3 className="text-xl font-bold text-white mb-2">10+ Effects</h3>
+          <p className="text-gray-300 text-sm">Professional filters and effects for every mood</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-blue-500/20 to-cyan-600/20 backdrop-blur-lg rounded-3xl p-6 border border-blue-500/20 hover:border-blue-400/40 transition-all duration-300 transform hover:scale-105">
+          <Image size={48} className="mx-auto mb-4 text-blue-400" />
+          <h3 className="text-xl font-bold text-white mb-2">Beautiful Frames</h3>
+          <p className="text-gray-300 text-sm">16+ themed frames for every occasion</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-cyan-500/20 to-green-600/20 backdrop-blur-lg rounded-3xl p-6 border border-cyan-500/20 hover:border-cyan-400/40 transition-all duration-300 transform hover:scale-105">
+          <Download size={48} className="mx-auto mb-4 text-cyan-400" />
+          <h3 className="text-xl font-bold text-white mb-2">Easy Download</h3>
+          <p className="text-gray-300 text-sm">Download individual photos or entire gallery</p>
+        </div>
+      </div>
+
+      <button
+        onClick={() => setCurrentPage('camera')}
+        className="bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500 hover:from-pink-600 hover:via-purple-700 hover:to-cyan-600 text-white px-12 py-4 rounded-full font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl"
+      >
+        Start Photo Booth 🚀
+      </button>
+    </div>
+  );
+
+  const renderCameraPage = () => (
+    <div className="grid lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2">
+        <div className="bg-black/20 backdrop-blur-lg rounded-3xl p-6 border border-white/10">
+          <div className="relative aspect-video bg-black rounded-2xl overflow-hidden mb-6">
+            {capturedPhoto ? (
+              <img
+                src={capturedPhoto}
+                alt="Captured photo"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                  style={getFilterStyle(selectedEffect)}
+                />
+                {isCapturing && (
+                  <div className="absolute inset-0 bg-white animate-ping opacity-50 rounded-2xl" />
+                )}
+              </>
+            )}
+            
+            {!cameraStarted && !capturedPhoto && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  {error ? (
+                    <div className="mb-4">
+                      <p className="text-red-400 text-sm mb-4 max-w-sm">{error}</p>
+                      <button
+                        onClick={() => {
+                          setError(null);
+                          startCamera();
+                        }}
+                        className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-3 rounded-full font-semibold transition-all duration-200 transform hover:scale-105"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  ) : loading ? (
+                    <div className="text-white">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+                      <p>Starting camera...</p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={startCamera}
+                      disabled={loading}
+                      className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
+                    >
+                      Start Camera
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-4 justify-center">
+            {capturedPhoto ? (
+              <>
+                <button
+                  onClick={() => downloadPhoto(capturedPhoto)}
+                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full font-medium flex items-center gap-2 transition-all duration-200 transform hover:scale-105"
+                >
+                  <Download size={20} />
+                  Download
+                </button>
+                <button
+                  onClick={retakePhoto}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-medium flex items-center gap-2 transition-all duration-200 transform hover:scale-105"
+                >
+                  <RotateCcw size={20} />
+                  Retake
+                </button>
+              </>
+            ) : cameraStarted ? (
+              <>
+                <button
+                  onClick={capturePhoto}
+                  disabled={isCapturing}
+                  className={`bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none ${
+                    isCapturing ? 'animate-pulse' : ''
+                  }`}
+                >
+                  <Camera size={24} className="inline mr-2" />
+                  {isCapturing ? 'Capturing...' : 'Capture Photo'}
+                </button>
+                <button
+                  onClick={switchCamera}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-full transition-all duration-200 transform hover:scale-105"
+                >
+                  <RotateCcw size={20} />
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="lg:col-span-1 space-y-6">
+        <div className="bg-black/20 backdrop-blur-lg rounded-3xl p-6 border border-white/10">
+          <h3 className="text-2xl font-bold text-white mb-6 text-center">Effects</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {effects.map((effect) => {
+              const Icon = effect.icon;
+              const isSelected = selectedEffect === effect.id;
+              
+              return (
+                <button
+                  key={effect.id}
+                  onClick={() => setSelectedEffect(effect.id)}
+                  className={`p-3 rounded-2xl border-2 transition-all duration-200 transform hover:scale-105 ${
+                    isSelected
+                      ? 'border-pink-500 bg-pink-500/20 text-pink-400'
+                      : 'border-white/20 bg-white/5 text-gray-300 hover:border-white/40 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <Icon size={20} />
+                    <span className="text-xs font-medium">{effect.name}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="bg-black/20 backdrop-blur-lg rounded-3xl p-6 border border-white/10">
+          <h3 className="text-lg font-bold text-white mb-4 text-center">Quick Frames</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setSelectedFrame('none')}
+              className={`p-3 rounded-xl border transition-all ${
+                selectedFrame === 'none'
+                  ? 'border-purple-500 bg-purple-500/20 text-purple-400'
+                  : 'border-white/20 bg-white/5 text-gray-300'
+              }`}
+            >
+              None
+            </button>
+            <button
+              onClick={() => setSelectedFrame('birthday1')}
+              className={`p-3 rounded-xl border transition-all ${
+                selectedFrame === 'birthday1'
+                  ? 'border-yellow-500 bg-yellow-500/20 text-yellow-400'
+                  : 'border-white/20 bg-white/5 text-gray-300'
+              }`}
+            >
+              Birthday
+            </button>
+            <button
+              onClick={() => setSelectedFrame('wedding1')}
+              className={`p-3 rounded-xl border transition-all ${
+                selectedFrame === 'wedding1'
+                  ? 'border-gold bg-yellow-600/20 text-yellow-400'
+                  : 'border-white/20 bg-white/5 text-gray-300'
+              }`}
+            >
+              Wedding
+            </button>
+            <button
+              onClick={() => setSelectedFrame('fun1')}
+              className={`p-3 rounded-xl border transition-all ${
+                selectedFrame === 'fun1'
+                  ? 'border-cyan-500 bg-cyan-500/20 text-cyan-400'
+                  : 'border-white/20 bg-white/5 text-gray-300'
+              }`}
+            >
+              Neon
+            </button>
+          </div>
+          <button
+            onClick={() => setCurrentPage('frames')}
+            className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all"
+          >
+            More Frames →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFramesPage = () => (
+    <div className="space-y-8">
+      <div className="text-center">
+        <h2 className="text-4xl font-bold text-white mb-4">Choose Your Frame</h2>
+        <p className="text-gray-300">Select from our collection of beautiful frames</p>
+      </div>
+
+      {Object.entries(frames).map(([category, frameList]) => (
+        <div key={category} className="bg-black/20 backdrop-blur-lg rounded-3xl p-6 border border-white/10">
+          <h3 className="text-2xl font-bold text-white mb-6 capitalize flex items-center gap-2">
+            {category === 'birthday' && <Gift className="text-yellow-400" />}
+            {category === 'wedding' && <Crown className="text-gold" />}
+            {category === 'nature' && <Sparkles className="text-green-400" />}
+            {category === 'fun' && <Zap className="text-cyan-400" />}
+            {category} Frames
+          </h3>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {frameList.map((frame) => (
+              <button
+                key={frame.id}
+                onClick={() => {
+                  setSelectedFrame(frame.id);
+                  setCurrentPage('camera');
+                }}
+                className={`aspect-square rounded-2xl border-2 transition-all duration-200 transform hover:scale-105 p-4 ${
+                  selectedFrame === frame.id
+                    ? 'border-pink-500 bg-pink-500/20'
+                    : 'border-white/20 bg-white/5 hover:border-white/40'
+                }`}
+              >
+                <div className="w-full h-full bg-gradient-to-br from-gray-600 to-gray-800 rounded-lg flex items-center justify-center relative overflow-hidden">
+                  <div className="text-white text-sm font-medium text-center">
+                    {frame.name}
+                  </div>
+                  {/* Frame preview mockup */}
+                  <div className="absolute inset-2 border-2 border-white/30 rounded"></div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      
+      <div className="text-center">
+        <button
+          onClick={() => setCurrentPage('camera')}
+          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-3 rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105"
+        >
+          Back to Camera
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderGalleryPage = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-4xl font-bold text-white mb-2">Photo Gallery</h2>
+          <p className="text-gray-300">{gallery.length} photos captured</p>
+        </div>
+        
+        {gallery.length > 0 && (
+          <button
+            onClick={downloadAllPhotos}
+            className="bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-full font-semibold hover:from-green-600 hover:to-blue-600 transition-all transform hover:scale-105 flex items-center gap-2"
+          >
+            <Download size={20} />
+            Download All ({gallery.length})
+          </button>
+        )}
+      </div>
+
+      {gallery.length === 0 ? (
+        <div className="text-center py-16">
+          <Camera size={64} className="mx-auto text-gray-600 mb-4" />
+          <h3 className="text-xl text-gray-400 mb-2">No photos yet</h3>
+          <p className="text-gray-500 mb-6">Start capturing memories!</p>
+          <button
+            onClick={() => setCurrentPage('camera')}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-purple-700 transition-all"
+          >
+            Take First Photo
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {gallery.map((photo) => (
+            <div key={photo.id} className="bg-black/20 backdrop-blur-lg rounded-2xl p-4 border border-white/10 hover:border-white/20 transition-all transform hover:scale-105">
+              <img
+                src={photo.data}
+                alt="Gallery photo"
+                className="w-full aspect-video object-cover rounded-xl mb-3"
+              />
+              <div className="text-sm text-gray-300 mb-2">
+                <p>Effect: {effects.find(e => e.id === photo.effect)?.name || 'None'}</p>
+                <p>Frame: {photo.frame !== 'none' ? photo.frame : 'None'}</p>
+                <p>Taken: {photo.timestamp}</p>
+              </div>
+              <button
+                onClick={() => downloadPhoto(photo.data, `photo-${photo.id}.png`)}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-2 rounded-lg font-medium hover:from-blue-600 hover:to-purple-600 transition-all flex items-center justify-center gap-2"
+              >
+                <Download size={16} />
+                Download
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Navigation */}
+        <nav className="mb-8">
+          <div className="bg-black/20 backdrop-blur-lg rounded-2xl p-4 border border-white/10">
+            <div className="flex justify-center space-x-2">
+              {pages.map((page) => {
+                const Icon = page.icon;
+                const isActive = currentPage === page.id;
+                
+                return (
+                  <button
+                    key={page.id}
+                    onClick={() => setCurrentPage(page.id)}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <Icon size={20} />
+                    <span className="hidden sm:inline">{page.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
+
+        {/* Page Content */}
+        <main>
+          {currentPage === 'home' && renderHomePage()}
+          {currentPage === 'camera' && renderCameraPage()}
+          {currentPage === 'frames' && renderFramesPage()}
+          {currentPage === 'gallery' && renderGalleryPage()}
+        </main>
+      </div>
+
+      {/* Hidden canvases */}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+      <canvas ref={frameCanvasRef} style={{ display: 'none' }} />
+    </div>
+  );
+};
+
+export default PhotoBooth;
