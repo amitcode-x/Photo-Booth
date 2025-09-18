@@ -360,14 +360,65 @@ const frameStyles = {
   }
 };
 const stickerPacks = [
-  { id: 1, emoji: '💖', type: 'heart' },
-  { id: 2, emoji: '🌹', type: 'rose' },
-  { id: 3, emoji: '💕', type: 'hearts' },
-  { id: 4, emoji: '✨', type: 'sparkles' },
-  { id: 5, emoji: '💋', type: 'kiss' },
-  { id: 6, emoji: '🥰', type: 'love' },
-  { id: 7, emoji: '🦋', type: 'butterfly' },
-  { id: 8, emoji: '🌸', type: 'flower' }
+  // General/Love stickers
+  { id: 1, emoji: '💖', type: 'heart', category: 'general' },
+  { id: 2, emoji: '🌹', type: 'rose', category: 'general' },
+  { id: 3, emoji: '💕', type: 'hearts', category: 'general' },
+  { id: 4, emoji: '✨', type: 'sparkles', category: 'general' },
+  { id: 5, emoji: '💋', type: 'kiss', category: 'love' },
+  { id: 6, emoji: '🥰', type: 'love', category: 'love' },
+  { id: 7, emoji: '🦋', type: 'butterfly', category: 'general' },
+  { id: 8, emoji: '🌸', type: 'flower', category: 'general' },
+  
+  // Love category
+  { id: 9, emoji: '😍', type: 'heart_eyes', category: 'love' },
+  { id: 10, emoji: '💘', type: 'cupid', category: 'love' },
+  { id: 11, emoji: '💝', type: 'gift_heart', category: 'love' },
+  { id: 12, emoji: '💓', type: 'beating_heart', category: 'love' },
+  { id: 13, emoji: '💗', type: 'growing_heart', category: 'love' },
+  { id: 14, emoji: '😘', type: 'kiss_face', category: 'love' },
+  
+  // Birthday category  
+  { id: 15, emoji: '🎂', type: 'cake', category: 'birthday' },
+  { id: 16, emoji: '🎈', type: 'balloon', category: 'birthday' },
+  { id: 17, emoji: '🎁', type: 'gift', category: 'birthday' },
+  { id: 18, emoji: '🎊', type: 'confetti', category: 'birthday' },
+  { id: 19, emoji: '🕯️', type: 'candle', category: 'birthday' },
+  { id: 20, emoji: '🥳', type: 'party_face', category: 'birthday' },
+  { id: 21, emoji: '🎀', type: 'ribbon', category: 'birthday' },
+  { id: 22, emoji: '🌟', type: 'star', category: 'birthday' },
+  
+  // Party category
+  { id: 23, emoji: '🎉', type: 'party', category: 'party' },
+  { id: 24, emoji: '🍾', type: 'champagne', category: 'party' },
+  { id: 25, emoji: '🥂', type: 'cheers', category: 'party' },
+  { id: 26, emoji: '🎵', type: 'music', category: 'party' },
+  { id: 27, emoji: '💃', type: 'dance', category: 'party' },
+  { id: 28, emoji: '🕺', type: 'dance_man', category: 'party' },
+  { id: 29, emoji: '🎪', type: 'circus', category: 'party' },
+  { id: 30, emoji: '🎭', type: 'masks', category: 'party' },
+  
+  // Wedding category
+  { id: 31, emoji: '💒', type: 'wedding', category: 'wedding' },
+  { id: 32, emoji: '👰', type: 'bride', category: 'wedding' },
+  { id: 33, emoji: '🤵', type: 'groom', category: 'wedding' },
+  { id: 34, emoji: '💍', type: 'ring', category: 'wedding' },
+  { id: 35, emoji: '💐', type: 'bouquet', category: 'wedding' },
+  { id: 36, emoji: '🕊️', type: 'dove', category: 'wedding' },
+  { id: 37, emoji: '⛪', type: 'church', category: 'wedding' },
+  { id: 38, emoji: '🎼', type: 'wedding_music', category: 'wedding' },
+  
+  // Graduation category
+  { id: 39, emoji: '🎓', type: 'graduation_cap', category: 'graduation' },
+  { id: 40, emoji: '📜', type: 'diploma', category: 'graduation' },
+  { id: 41, emoji: '🏆', type: 'trophy', category: 'graduation' },
+  { id: 42, emoji: '📚', type: 'books', category: 'graduation' },
+  { id: 43, emoji: '🎯', type: 'target', category: 'graduation' },
+  { id: 44, emoji: '⭐', type: 'star', category: 'graduation' },
+  { id: 45, emoji: '🌟', type: 'glowing_star', category: 'graduation' },
+  { id: 46, emoji: '👏', type: 'clap', category: 'graduation' },
+  
+ 
 ];
 
 // Landing Screen Component
