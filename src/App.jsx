@@ -1,952 +1,1607 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, Download, RotateCcw, Sparkles, Palette, Sun, Moon, Zap, Heart, Star, Home, Image, Smile, Gift, Music, Crown, Flame, Coffee } from 'lucide-react';
+// Enhanced Download Button with Save Option
+const DownloadButton = () => {
+  const [showPreview, setShowPreview] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [savedPhotos, setSavedPhotos] = useState([]);
+  const { capturedImage, selectedFilter, stickers, loveNote } = usePhotoBooth();
 
-const PhotoBooth = () => {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const frameCanvasRef = useRef(null);
-  const [stream, setStream] = useState(null);
-  const [capturedPhoto, setCapturedPhoto] = useState(null);
-  const [selectedEffect, setSelectedEffect] = useState('none');
-  const [selectedFrame, setSelectedFrame] = useState('none');
-  const [currentPage, setCurrentPage] = useState('home');
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [cameraStarted, setCameraStarted] = useState(false);
-  const [facingMode, setFacingMode] = useState('user');
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [gallery, setGallery] = useState([]);
-
-  const effects = [
-    { id: 'none', name: 'Original', icon: Camera, filter: 'none' },
-    { id: 'sepia', name: 'Vintage', icon: Sun, filter: 'sepia(100%)' },
-    { id: 'grayscale', name: 'B&W', icon: Moon, filter: 'grayscale(100%)' },
-    { id: 'blur', name: 'Dreamy', icon: Sparkles, filter: 'blur(2px)' },
-    { id: 'saturate', name: 'Vibrant', icon: Palette, filter: 'saturate(200%)' },
-    { id: 'contrast', name: 'Drama', icon: Zap, filter: 'contrast(150%)' },
-    { id: 'hue', name: 'Rainbow', icon: Heart, filter: 'hue-rotate(90deg)' },
-    { id: 'invert', name: 'Negative', icon: Star, filter: 'invert(100%)' },
-    { id: 'warm', name: 'Warm', icon: Coffee, filter: 'sepia(30%) saturate(120%)' },
-    { id: 'cool', name: 'Cool', icon: Flame, filter: 'hue-rotate(180deg) saturate(120%)' },
-  ];
-
-  const frames = {
-    birthday: [
-      { id: 'birthday1', name: 'Birthday Stars', category: 'birthday', color: 'from-yellow-400 to-orange-400' },
-      { id: 'birthday2', name: 'Party Time', category: 'birthday', color: 'from-pink-400 to-red-400' },
-      { id: 'birthday3', name: 'Cake & Balloons', category: 'birthday', color: 'from-purple-400 to-pink-400' },
-      { id: 'birthday4', name: 'Confetti', category: 'birthday', color: 'from-rainbow' },
-    ],
-    wedding: [
-      { id: 'wedding1', name: 'Elegant Gold', category: 'wedding', color: 'from-yellow-600 to-yellow-400' },
-      { id: 'wedding2', name: 'Rose Garden', category: 'wedding', color: 'from-rose-400 to-pink-400' },
-      { id: 'wedding3', name: 'Classic White', category: 'wedding', color: 'from-gray-100 to-white' },
-      { id: 'wedding4', name: 'Royal Crown', category: 'wedding', color: 'from-purple-600 to-purple-400' },
-    ],
-    nature: [
-      { id: 'nature1', name: 'Floral Border', category: 'nature', color: 'from-green-400 to-emerald-400' },
-      { id: 'nature2', name: 'Sunset Glow', category: 'nature', color: 'from-orange-400 to-red-400' },
-      { id: 'nature3', name: 'Forest Frame', category: 'nature', color: 'from-green-600 to-green-400' },
-      { id: 'nature4', name: 'Ocean Waves', category: 'nature', color: 'from-blue-400 to-cyan-400' },
-    ],
-    fun: [
-      { id: 'fun1', name: 'Neon Lights', category: 'fun', color: 'from-cyan-400 to-blue-400' },
-      { id: 'fun2', name: 'Comic Style', category: 'fun', color: 'from-yellow-400 to-red-400' },
-      { id: 'fun3', name: 'Disco Ball', category: 'fun', color: 'from-purple-400 to-pink-400' },
-      { id: 'fun4', name: 'Retro Wave', category: 'fun', color: 'from-pink-400 to-purple-400' },
-    ],
+  const generatePolaroidDataURL = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const polaroidWidth = 400;
+    const polaroidHeight = 500;
+    const imageSize = 360;
+    const borderSize = 20;
+    
+    canvas.width = polaroidWidth;
+    canvas.height = polaroidHeight;
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, polaroidWidth, polaroidHeight);
+    
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        ctx.filter = filters.find(f => f.id === selectedFilter)?.filter || 'none';
+        ctx.drawImage(img, borderSize, borderSize, imageSize, imageSize);
+        ctx.filter = 'none';
+        
+        stickers.forEach((sticker) => {
+          const x = (sticker.x / 100) * imageSize + borderSize;
+          const y = (sticker.y / 100) * imageSize + borderSize;
+          
+          if (sticker.type === 'marker') {
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(x - 25, y - 8, 50, 16);
+            ctx.strokeStyle = '#facc15';
+            ctx.strokeRect(x - 25, y - 8, 50, 16);
+            ctx.fillStyle = '#374151';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(sticker.timestamp, x, y + 3);
+          } else {
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(sticker.emoji, x, y);
+          }
+        });
+        
+        const captionY = imageSize + borderSize + 20;
+        ctx.fillStyle = '#6b7280';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        const currentDate = new Date().toLocaleDateString();
+        const currentTime = new Date().toLocaleTimeString();
+        ctx.fillText(`${currentDate} • ${currentTime}`, polaroidWidth / 2, captionY);
+        
+        if (loveNote) {
+          ctx.fillStyle = '#374151';
+          ctx.font = '16px cursive';
+          ctx.fillText(loveNote, polaroidWidth / 2, captionY + 30);
+        } else {
+          ctx.fillText('Made with love 💕', polaroidWidth / 2, captionY + 30);
+        }
+        
+        resolve(canvas.toDataURL());
+      };
+      img.src = capturedImage;
+    });
   };
 
-  const pages = [
-    { id: 'home', name: 'Home', icon: Home },
-    { id: 'camera', name: 'Camera', icon: Camera },
-    { id: 'frames', name: 'Frames', icon: Image },
-    { id: 'gallery', name: 'Gallery', icon: Smile },
-  ];
-
-  const drawFrame = useCallback((canvas, frameId) => {
-    const ctx = canvas.getContext('2d');
-    const { width, height } = canvas;
+  const savePhoto = async () => {
+    if (!capturedImage) return;
     
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height);
+    setIsProcessing(true);
+    const dataURL = await generatePolaroidDataURL();
     
-    // Frame drawing logic
-    switch (frameId) {
-      case 'birthday1':
-        // Birthday Stars frame
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 12;
-        ctx.strokeRect(8, 8, width - 16, height - 16);
-        // Inner border
-        ctx.strokeStyle = '#FFA500';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(20, 20, width - 40, height - 40);
-        // Draw stars around border
-        ctx.fillStyle = '#FFD700';
-        ctx.font = '30px Arial';
-        for (let i = 0; i < 15; i++) {
-          const x = 30 + Math.random() * (width - 60);
-          const y = 50 + Math.random() * (height - 100);
-          if (x < 80 || x > width - 80 || y < 80 || y > height - 80) {
-            ctx.fillText('⭐', x, y);
-          }
-        }
-        break;
-        
-      case 'birthday2':
-        // Party Time frame
-        ctx.strokeStyle = '#FF1493';
-        ctx.lineWidth = 15;
-        ctx.strokeRect(10, 10, width - 20, height - 20);
-        // Party text
-        ctx.fillStyle = '#FF1493';
-        ctx.font = 'bold 28px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('🎉 PARTY TIME! 🎉', width/2, 50);
-        ctx.fillText('🎊 CELEBRATE! 🎊', width/2, height - 20);
-        ctx.textAlign = 'left';
-        break;
+    const savedPhoto = {
+      id: Date.now(),
+      dataURL,
+      filter: selectedFilter,
+      note: loveNote,
+      date: new Date().toLocaleString(),
+      stickers: stickers.length
+    };
+    
+    setSavedPhotos(prev => [...prev, savedPhoto]);
+    setShowSaveModal(false);
+    setIsProcessing(false);
+    
+    // Show success animation
+    const successDiv = document.createElement('div');
+    successDiv.innerHTML = '💾 Photo Saved Successfully! ✨';
+    successDiv.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(45deg, #10b981, #059669);
+      color: white;
+      padding: 20px 30px;
+      border-radius: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      z-index: 9999;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      animation: saveSuccess 2s ease-in-out forwards;
+    `;
+    
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes saveSuccess {
+        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+        50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+        100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+      }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(successDiv);
+    
+    setTimeout(() => {
+      document.body.removeChild(successDiv);
+      document.head.removeChild(style);
+    }, 2000);
+  };
 
-      case 'birthday3':
-        // Cake & Balloons
-        ctx.strokeStyle = '#DA70D6';
-        ctx.lineWidth = 10;
-        ctx.strokeRect(12, 12, width - 24, height - 24);
-        // Add decorations
-        ctx.fillStyle = '#DA70D6';
-        ctx.font = '25px Arial';
-        // Balloons
-        ctx.fillText('🎈🎈', 20, 50);
-        ctx.fillText('🎈🎈', width - 80, 50);
-        // Cake
-        ctx.fillText('🎂', width/2 - 15, 50);
-        ctx.fillText('🍰🧁', 20, height - 20);
-        ctx.fillText('🍰🧁', width - 80, height - 20);
-        break;
+  const downloadPhoto = async () => {
+    if (!capturedImage) return;
+    
+    setIsProcessing(true);
+    const dataURL = await generatePolaroidDataURL();
+    
+    const link = document.createElement('a');
+    link.download = `love-booth-${Date.now()}.png`;
+    link.href = dataURL;
+    link.click();
+    
+    setShowSaveModal(false);
+    setIsProcessing(false);
+  };
 
-      case 'birthday4':
-        // Confetti
-        ctx.strokeStyle = '#FF6347';
-        ctx.lineWidth = 8;
-        ctx.strokeRect(15, 15, width - 30, height - 30);
-        // Confetti particles
-        const colors = ['#FF6347', '#FFD700', '#FF1493', '#00CED1', '#32CD32'];
-        for (let i = 0; i < 50; i++) {
-          ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
-          const x = Math.random() * width;
-          const y = Math.random() * height;
-          ctx.fillRect(x, y, 8, 8);
-        }
-        break;
-        
-      case 'wedding1':
-        // Elegant Gold frame
-        ctx.strokeStyle = '#DAA520';
-        ctx.lineWidth = 16;
-        ctx.strokeRect(8, 8, width - 16, height - 16);
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 6;
-        ctx.strokeRect(24, 24, width - 48, height - 48);
-        // Corner decorations
-        ctx.fillStyle = '#FFD700';
-        ctx.font = '20px Arial';
-        ctx.fillText('✨', 15, 35);
-        ctx.fillText('✨', width - 35, 35);
-        ctx.fillText('✨', 15, height - 15);
-        ctx.fillText('✨', width - 35, height - 15);
-        break;
+  return (
+    <>
+      <motion.button
+        onClick={() => setShowPreview(true)}
+        disabled={!capturedImage || isProcessing}
+        className="bg-gradient-to-r from-pink-500 to-rose-500 text-white p-3 rounded-full shadow-lg disabled:opacity-50"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+      >
+        {isProcessing ? (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          >
+            <Sparkles size={20} />
+          </motion.div>
+        ) : (
+          <Heart size={20} />
+        )}
+      </motion.button>
 
-      case 'wedding2':
-        // Rose Garden
-        ctx.strokeStyle = '#DC143C';
-        ctx.lineWidth = 12;
-        ctx.strokeRect(10, 10, width - 20, height - 20);
-        // Roses around border
-        ctx.fillStyle = '#DC143C';
-        ctx.font = '22px Arial';
-        for (let i = 0; i < 12; i++) {
-          const x = 30 + Math.random() * (width - 60);
-          const y = 40 + Math.random() * (height - 80);
-          if (x < 60 || x > width - 60 || y < 60 || y > height - 60) {
-            ctx.fillText('🌹', x, y);
-          }
-        }
-        break;
+      <AnimatePresence>
+        {showPreview && (
+          <PolaroidPreview
+            imageData={capturedImage}
+            filter={selectedFilter}
+            stickers={stickers}
+            loveNote={loveNote}
+            onClose={() => setShowPreview(false)}
+          />
+        )}
+      </AnimatePresence>
 
-      case 'wedding3':
-        // Classic White
-        ctx.strokeStyle = '#F5F5F5';
-        ctx.lineWidth = 20;
-        ctx.strokeRect(5, 5, width - 10, height - 10);
-        ctx.strokeStyle = '#E6E6FA';
-        ctx.lineWidth = 8;
-        ctx.strokeRect(25, 25, width - 50, height - 50);
-        break;
+      {showPreview && (
+        <motion.button
+          onClick={() => setShowSaveModal(true)}
+          className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-pink-500 to-rose-500 text-white px-8 py-4 rounded-full shadow-xl z-50 flex items-center space-x-3"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+        >
+          <Heart size={20} />
+          <span className="font-medium">Save Memory</span>
+        </motion.button>
+      )}
 
-      case 'wedding4':
-        // Royal Crown
-        ctx.strokeStyle = '#8A2BE2';
-        ctx.lineWidth = 14;
-        ctx.strokeRect(12, 12, width - 24, height - 24);
-        ctx.fillStyle = '#8A2BE2';
-        ctx.font = '25px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('👑', width/2, 45);
-        ctx.fillText('💎', 30, height/2);
-        ctx.fillText('💎', width - 30, height/2);
-        ctx.textAlign = 'left';
-        break;
-        
-      case 'nature1':
-        // Floral Border
-        ctx.strokeStyle = '#228B22';
-        ctx.lineWidth = 10;
-        ctx.strokeRect(12, 12, width - 24, height - 24);
-        // Flowers and leaves
-        ctx.fillStyle = '#228B22';
-        ctx.font = '20px Arial';
-        const flowers = ['🌸', '🌺', '🌻', '🍀', '🌿'];
-        for (let i = 0; i < 20; i++) {
-          const x = 25 + Math.random() * (width - 50);
-          const y = 35 + Math.random() * (height - 70);
-          if (x < 80 || x > width - 80 || y < 80 || y > height - 80) {
-            const flower = flowers[Math.floor(Math.random() * flowers.length)];
-            ctx.fillText(flower, x, y);
-          }
-        }
-        break;
+      <SaveConfirmationModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onConfirm={savePhoto}
+        onDownload={downloadPhoto}
+      />
+    </>
+  );
+};import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Camera, RotateCcw, Heart, Download, Upload, X, Sparkles, Play, MessageCircle } from 'lucide-react';
 
-      case 'nature2':
-        // Sunset Glow
-        ctx.strokeStyle = '#FF4500';
-        ctx.lineWidth = 12;
-        ctx.strokeRect(10, 10, width - 20, height - 20);
-        // Gradient effect
-        const gradient = ctx.createLinearGradient(0, 0, width, height);
-        gradient.addColorStop(0, 'rgba(255, 69, 0, 0.3)');
-        gradient.addColorStop(1, 'rgba(255, 140, 0, 0.3)');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(22, 22, width - 44, height - 44);
-        break;
+// Photo Booth Context
+const PhotoBoothContext = createContext();
 
-      case 'nature3':
-        // Forest Frame
-        ctx.strokeStyle = '#006400';
-        ctx.lineWidth = 14;
-        ctx.strokeRect(8, 8, width - 16, height - 16);
-        ctx.fillStyle = '#228B22';
-        ctx.font = '18px Arial';
-        const trees = ['🌲', '🌳', '🍃'];
-        for (let i = 0; i < 15; i++) {
-          const x = 20 + Math.random() * (width - 40);
-          const y = 30 + Math.random() * (height - 60);
-          if (x < 60 || x > width - 60 || y < 60 || y > height - 60) {
-            const tree = trees[Math.floor(Math.random() * trees.length)];
-            ctx.fillText(tree, x, y);
-          }
-        }
-        break;
+const usePhotoBooth = () => {
+  const context = useContext(PhotoBoothContext);
+  if (!context) {
+    throw new Error('usePhotoBooth must be used within PhotoBoothProvider');
+  }
+  return context;
+};
 
-      case 'nature4':
-        // Ocean Waves
-        ctx.strokeStyle = '#1E90FF';
-        ctx.lineWidth = 12;
-        ctx.strokeRect(10, 10, width - 20, height - 20);
-        // Wave pattern
-        ctx.strokeStyle = '#00CED1';
-        ctx.lineWidth = 4;
-        for (let i = 0; i < 5; i++) {
-          ctx.beginPath();
-          ctx.moveTo(22, 30 + i * 20);
-          for (let x = 22; x < width - 22; x += 20) {
-            ctx.lineTo(x + 10, 40 + i * 20);
-            ctx.lineTo(x + 20, 30 + i * 20);
-          }
-          ctx.stroke();
-        }
-        break;
-        
-      case 'fun1':
-        // Neon Lights
-        ctx.strokeStyle = '#00FFFF';
-        ctx.lineWidth = 8;
-        ctx.strokeRect(10, 10, width - 20, height - 20);
-        ctx.strokeStyle = '#FF00FF';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(18, 18, width - 36, height - 36);
-        ctx.strokeStyle = '#00FF00';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(26, 26, width - 52, height - 52);
-        break;
+// Photo Booth Provider
+const PhotoBoothProvider = ({ children }) => {
+  const [currentView, setCurrentView] = useState('landing'); // landing, camera, editor
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [selectedFilter, setSelectedFilter] = useState('none');
+  const [stickers, setStickers] = useState([]);
+  const [loveNote, setLoveNote] = useState('');
+  const [isFlashActive, setIsFlashActive] = useState(false);
 
-      case 'fun2':
-        // Comic Style
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 6;
-        ctx.strokeRect(8, 8, width - 16, height - 16);
-        // Comic bubbles
-        ctx.fillStyle = '#FFD700';
-        ctx.font = 'bold 24px Arial';
-        ctx.fillText('POW!', 20, 40);
-        ctx.fillText('ZAP!', width - 70, height - 20);
-        // Dots pattern
-        ctx.fillStyle = '#FF0000';
-        for (let i = 0; i < 30; i++) {
-          const x = Math.random() * width;
-          const y = Math.random() * height;
-          if (x < 50 || x > width - 50 || y < 50 || y > height - 50) {
-            ctx.fillRect(x, y, 4, 4);
-          }
-        }
-        break;
+  const value = {
+    currentView, setCurrentView,
+    capturedImage, setCapturedImage,
+    selectedFilter, setSelectedFilter,
+    stickers, setStickers,
+    loveNote, setLoveNote,
+    isFlashActive, setIsFlashActive
+  };
 
-      case 'fun3':
-        // Disco Ball
-        ctx.strokeStyle = '#8B008B';
-        ctx.lineWidth = 10;
-        ctx.strokeRect(12, 12, width - 24, height - 24);
-        // Disco elements
-        ctx.fillStyle = '#FFD700';
-        ctx.font = '20px Arial';
-        ctx.fillText('🕺', 25, 45);
-        ctx.fillText('💃', width - 45, 45);
-        ctx.fillText('🎵', 25, height - 25);
-        ctx.fillText('🎶', width - 45, height - 25);
-        // Sparkles
-        ctx.fillStyle = '#FFFFFF';
-        for (let i = 0; i < 20; i++) {
-          const x = Math.random() * width;
-          const y = Math.random() * height;
-          ctx.fillText('✨', x, y);
-        }
-        break;
+  return (
+    <PhotoBoothContext.Provider value={value}>
+      {children}
+    </PhotoBoothContext.Provider>
+  );
+};
 
-      case 'fun4':
-        // Retro Wave
-        ctx.strokeStyle = '#FF1493';
-        ctx.lineWidth = 8;
-        ctx.strokeRect(10, 10, width - 20, height - 20);
-        // Retro grid pattern
-        ctx.strokeStyle = '#00FFFF';
-        ctx.lineWidth = 2;
-        for (let i = 30; i < width - 30; i += 30) {
-          ctx.beginPath();
-          ctx.moveTo(i, 22);
-          ctx.lineTo(i, height - 22);
-          ctx.stroke();
-        }
-        for (let i = 30; i < height - 30; i += 30) {
-          ctx.beginPath();
-          ctx.moveTo(22, i);
-          ctx.lineTo(width - 22, i);
-          ctx.stroke();
-        }
-        break;
-        
-      default:
-        // Default frame
-        ctx.strokeStyle = '#FF6B6B';
-        ctx.lineWidth = 8;
-        ctx.strokeRect(10, 10, width - 20, height - 20);
-    }
+// Filter definitions with occasions
+const filters = [
+  { id: 'none', name: 'Original', filter: 'none', emoji: '📷' },
+  { id: 'romantic', name: 'Romantic', filter: 'sepia(0.3) contrast(1.1) brightness(1.1)', emoji: '💕' },
+  { id: 'dreamy', name: 'Dreamy', filter: 'blur(0.5px) brightness(1.2) contrast(0.9)', emoji: '✨' },
+  { id: 'vintage', name: 'Vintage', filter: 'sepia(0.5) contrast(1.2) brightness(0.9)', emoji: '📸' },
+  { id: 'warm', name: 'Warm', filter: 'hue-rotate(20deg) saturate(1.2) brightness(1.1)', emoji: '🌅' },
+  { id: 'soft', name: 'Soft', filter: 'contrast(0.8) brightness(1.1) saturate(0.9)', emoji: '🌸' },
+  { id: 'birthday', name: 'Birthday', filter: 'hue-rotate(45deg) saturate(1.5) brightness(1.2)', emoji: '🎂' },
+  { id: 'party', name: 'Party', filter: 'contrast(1.3) saturate(1.4) brightness(1.1)', emoji: '🎉' },
+  { id: 'wedding', name: 'Wedding', filter: 'sepia(0.2) contrast(1.1) brightness(1.3)', emoji: '💒' },
+  { id: 'anniversary', name: 'Anniversary', filter: 'hue-rotate(320deg) saturate(1.2) brightness(1.1)', emoji: '💖' },
+  { id: 'friendship', name: 'Friendship', filter: 'hue-rotate(60deg) saturate(1.1) brightness(1.2)', emoji: '👯' },
+  { id: 'graduation', name: 'Graduation', filter: 'contrast(1.2) saturate(1.1) brightness(1.1)', emoji: '🎓' }
+];
+
+// Enhanced Frame System with automatic application
+const frameStyles = {
+  none: {
+    border: 'none',
+    borderRadius: '0px',
+    background: 'transparent',
+    boxShadow: 'none'
+  },
+  birthday: {
+    border: '8px solid transparent',
+    borderRadius: '15px',
+    background: `
+      linear-gradient(white, white) padding-box,
+      linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #45b7d1) border-box
+    `,
+    boxShadow: '0 0 30px rgba(255, 215, 0, 0.3), inset 0 0 30px rgba(255, 215, 0, 0.1)'
+  },
+  party: {
+    border: '6px solid transparent',
+    borderRadius: '10px',
+    background: `
+      linear-gradient(white, white) padding-box,
+      linear-gradient(45deg, #ff0080, #ff8c00, #ffd700, #ff0080) border-box
+    `,
+    boxShadow: '0 0 25px rgba(255, 0, 128, 0.4)'
+  },
+  wedding: {
+    border: '10px solid #ffffff',
+    borderRadius: '20px',
+    background: 'linear-gradient(45deg, rgba(255, 255, 255, 0.2), rgba(248, 250, 252, 0.1))',
+    boxShadow: '0 0 40px rgba(255, 255, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2)'
+  },
+  anniversary: {
+    border: '8px solid transparent',
+    borderRadius: '25px',
+    background: `
+      linear-gradient(white, white) padding-box,
+      linear-gradient(45deg, #ff69b4, #ff1493, #dc143c, #ff69b4) border-box
+    `,
+    boxShadow: '0 0 35px rgba(255, 105, 180, 0.5)'
+  },
+  friendship: {
+    border: '6px solid transparent',
+    borderRadius: '12px',
+    background: `
+      linear-gradient(white, white) padding-box,
+      linear-gradient(45deg, #32cd32, #00fa9a, #7fffd4, #32cd32) border-box
+    `,
+    boxShadow: '0 0 25px rgba(50, 205, 50, 0.4)'
+  },
+  graduation: {
+    border: '8px solid transparent',
+    borderRadius: '15px',
+    background: `
+      linear-gradient(white, white) padding-box,
+      linear-gradient(45deg, #4169e1, #1e90ff, #00bfff, #4169e1) border-box
+    `,
+    boxShadow: '0 0 30px rgba(65, 105, 225, 0.4)'
+  },
+  romantic: {
+    border: '6px solid transparent',
+    borderRadius: '20px',
+    background: `
+      linear-gradient(white, white) padding-box,
+      linear-gradient(45deg, #ff69b4, #ff1493, #ff69b4) border-box
+    `,
+    boxShadow: '0 0 25px rgba(255, 105, 180, 0.3)'
+  }
+};
+const stickerPacks = [
+  { id: 1, emoji: '💖', type: 'heart' },
+  { id: 2, emoji: '🌹', type: 'rose' },
+  { id: 3, emoji: '💕', type: 'hearts' },
+  { id: 4, emoji: '✨', type: 'sparkles' },
+  { id: 5, emoji: '💋', type: 'kiss' },
+  { id: 6, emoji: '🥰', type: 'love' },
+  { id: 7, emoji: '🦋', type: 'butterfly' },
+  { id: 8, emoji: '🌸', type: 'flower' }
+];
+
+// Landing Screen Component
+const LandingScreen = () => {
+  const { setCurrentView, setCapturedImage } = usePhotoBooth();
+  const [hearts, setHearts] = useState([]);
+
+  useEffect(() => {
+    // Generate floating hearts
+    const heartArray = Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      size: Math.random() * 30 + 20,
+      left: Math.random() * 100,
+      delay: Math.random() * 5,
+      duration: 8 + Math.random() * 4
+    }));
+    setHearts(heartArray);
   }, []);
 
-  const startCamera = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCapturedImage(e.target.result);
+        setCurrentView('editor');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <motion.div 
+      className="relative min-h-screen bg-gradient-to-br from-pink-300 via-purple-300 to-rose-400 overflow-hidden flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1 }}
+    >
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        {hearts.map((heart) => (
+          <motion.div
+            key={heart.id}
+            className="absolute text-pink-200/30"
+            style={{
+              left: `${heart.left}%`,
+              fontSize: `${heart.size}px`,
+            }}
+            initial={{ y: '100vh', opacity: 0 }}
+            animate={{ 
+              y: '-100vh', 
+              opacity: [0, 1, 1, 0],
+              rotate: 360 
+            }}
+            transition={{
+              duration: heart.duration,
+              delay: heart.delay,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          >
+            💖
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Decorative Elements */}
+      <div className="absolute top-10 left-10">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="text-6xl text-pink-200/50"
+        >
+          ✨
+        </motion.div>
+      </div>
+      
+      <div className="absolute top-20 right-16">
+        <motion.div
+          animate={{ rotate: -360 }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="text-4xl text-purple-200/50"
+        >
+          🌸
+        </motion.div>
+      </div>
+
+      <div className="absolute bottom-20 left-20">
+        <motion.div
+          animate={{ 
+            rotate: [0, 10, -10, 0],
+            scale: [1, 1.1, 1] 
+          }}
+          transition={{ duration: 4, repeat: Infinity }}
+          className="text-5xl text-rose-200/50"
+        >
+          🦋
+        </motion.div>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 text-center px-6 max-w-lg">
+        {/* Logo/Title */}
+        <motion.div
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 1, delay: 0.5 }}
+        >
+          <div className="relative mb-8">
+            <motion.div
+              animate={{ 
+                rotate: [0, 5, -5, 0],
+                scale: [1, 1.05, 1] 
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+              className="text-8xl mb-4"
+            >
+              💕
+            </motion.div>
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-white via-pink-100 to-rose-100 bg-clip-text text-transparent mb-2" 
+                style={{ fontFamily: 'cursive' }}>
+              Love Booth
+            </h1>
+            <motion.p 
+              className="text-lg text-pink-100/80 font-medium"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              Create magical moments together ✨
+            </motion.p>
+          </div>
+        </motion.div>
+
+        {/* Action Buttons */}
+        <motion.div 
+          className="space-y-6"
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 1, delay: 1 }}
+        >
+          {/* Start Camera Button */}
+          <motion.button
+            onClick={() => setCurrentView('camera')}
+            className="group relative w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white px-8 py-6 rounded-2xl shadow-2xl font-semibold text-lg overflow-hidden"
+            whileHover={{ 
+              scale: 1.05, 
+              boxShadow: "0 25px 50px -12px rgba(236, 72, 153, 0.5)" 
+            }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-pink-400 to-rose-400 opacity-0 group-hover:opacity-100"
+              initial={false}
+              transition={{ duration: 0.3 }}
+            />
+            <div className="relative flex items-center justify-center space-x-3">
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              >
+                <Camera size={28} />
+              </motion.div>
+              <span>Start Photo Session</span>
+            </div>
+            
+            {/* Sparkle Effect */}
+            <motion.div
+              className="absolute inset-0 opacity-0 group-hover:opacity-100"
+              initial={false}
+            >
+              {[...Array(6)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute text-yellow-200"
+                  style={{
+                    left: `${20 + i * 12}%`,
+                    top: `${30 + (i % 2) * 40}%`,
+                  }}
+                  animate={{
+                    scale: [0, 1, 0],
+                    rotate: [0, 180],
+                    opacity: [0, 1, 0]
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    delay: i * 0.1,
+                    repeat: Infinity
+                  }}
+                >
+                  ✨
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.button>
+
+          {/* Upload Button */}
+          <div className="relative">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+              id="landing-file-upload"
+            />
+            <label htmlFor="landing-file-upload">
+              <motion.div
+                className="cursor-pointer w-full bg-white/20 backdrop-blur-sm border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-medium text-lg hover:bg-white/30 transition-all duration-300"
+                whileHover={{ 
+                  scale: 1.02,
+                  borderColor: "rgba(255, 255, 255, 0.5)"
+                }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center justify-center space-x-3">
+                  <Upload size={24} />
+                  <span>Upload Your Photo</span>
+                </div>
+              </motion.div>
+            </label>
+          </div>
+        </motion.div>
+
+        {/* Feature Pills */}
+        <motion.div 
+          className="flex flex-wrap justify-center gap-3 mt-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1.5 }}
+        >
+          {['Romantic Filters', 'Love Stickers', 'Polaroid Style'].map((feature, index) => (
+            <motion.div
+              key={feature}
+              className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-white/80 border border-white/20"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 1.7 + index * 0.1 }}
+              whileHover={{ scale: 1.05, backgroundColor: "rgba(255, 255, 255, 0.2)" }}
+            >
+              {feature}
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* Bottom Decoration */}
+      <motion.div 
+        className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/10 to-transparent"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 2, delay: 2 }}
+      />
+    </motion.div>
+  );
+};
+
+// Enhanced Camera Screen with Attractive Design
+const CameraFullScreen = () => {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [stream, setStream] = useState(null);
+  const [facingMode, setFacingMode] = useState('user');
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [cameraStarted, setCameraStarted] = useState(false);
+  const [sparkles, setSparkles] = useState([]);
+  
+  const { 
+    setCapturedImage, 
+    setCurrentView, 
+    selectedFilter,
+    isFlashActive,
+    setIsFlashActive 
+  } = usePhotoBooth();
+
+  // Generate floating sparkles
+  useEffect(() => {
+    const sparkleArray = Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      size: Math.random() * 20 + 10,
+      left: Math.random() * 100,
+      delay: Math.random() * 3,
+      duration: 4 + Math.random() * 2
+    }));
+    setSparkles(sparkleArray);
+  }, []);
+
+  useEffect(() => {
+    if (cameraStarted) {
+      startCamera();
+    }
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [facingMode, cameraStarted]);
+
+  const startCamera = async () => {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Camera not supported by this browser');
-      }
-
-      let mediaStream;
-      
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode,
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false
-        });
-      } catch (err) {
-        console.log('Trying basic constraints...');
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode },
-          audio: false
-        });
-      }
-      
-      if (videoRef.current && mediaStream) {
+      const constraints = {
+        video: { 
+          facingMode,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      };
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(mediaStream);
+      if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play();
-          setStream(mediaStream);
-          setCameraStarted(true);
-          setLoading(false);
-        };
       }
-    } catch (err) {
-      console.error('Error accessing camera:', err);
-      setLoading(false);
-      
-      let errorMessage = 'Camera access failed. ';
-      
-      if (err.name === 'NotAllowedError') {
-        errorMessage += 'Please allow camera permissions and refresh the page.';
-      } else if (err.name === 'NotFoundError') {
-        errorMessage += 'No camera found on this device.';
-      } else if (err.name === 'NotSupportedError') {
-        errorMessage += 'Camera not supported by this browser.';
-      } else {
-        errorMessage += 'Please check your camera and try again.';
-      }
-      
-      setError(errorMessage);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
     }
-  }, [facingMode]);
+  };
 
-  const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-      setCameraStarted(false);
-    }
-  }, [stream]);
-
-  const switchCamera = useCallback(() => {
-    stopCamera();
-    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-  }, [stopCamera]);
-
-  const capturePhoto = useCallback(() => {
+  const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
     setIsCapturing(true);
-    
+    setIsFlashActive(true);
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const frameCanvas = frameCanvasRef.current;
-    const context = canvas.getContext('2d');
-    
+    const ctx = canvas.getContext('2d');
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
-    // Reset filter
-    context.filter = 'none';
-    
-    // Apply effect
-    const effect = effects.find(e => e.id === selectedEffect);
-    if (effect && effect.filter !== 'none') {
-      context.filter = effect.filter;
-    }
-    
-    // Draw video
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Reset filter for frame drawing
-    context.filter = 'none';
-    
-    // Apply frame if selected
-    if (selectedFrame !== 'none') {
-      frameCanvas.width = canvas.width;
-      frameCanvas.height = canvas.height;
-      drawFrame(frameCanvas, selectedFrame);
-      
-      // Composite frame onto photo
-      context.globalCompositeOperation = 'source-over';
-      context.drawImage(frameCanvas, 0, 0);
-    }
-    
-    const photoData = canvas.toDataURL('image/png');
-    setCapturedPhoto(photoData);
-    
-    // Add to gallery
-    const newPhoto = {
-      id: Date.now(),
-      data: photoData,
-      effect: selectedEffect,
-      frame: selectedFrame,
-      timestamp: new Date().toLocaleString()
-    };
-    setGallery(prev => [newPhoto, ...prev]);
-    
-    setTimeout(() => setIsCapturing(false), 300);
-  }, [selectedEffect, selectedFrame, drawFrame]);
 
-  const downloadPhoto = useCallback((photoData, filename) => {
-    const link = document.createElement('a');
-    link.download = filename || `photo-booth-${Date.now()}.png`;
-    link.href = photoData;
-    link.click();
-  }, []);
+    ctx.filter = filters.find(f => f.id === selectedFilter)?.filter || 'none';
+    ctx.drawImage(video, 0, 0);
 
-  const downloadAllPhotos = useCallback(() => {
-    gallery.forEach((photo, index) => {
-      setTimeout(() => {
-        downloadPhoto(photo.data, `photo-${index + 1}-${photo.timestamp.replace(/[/:]/g, '-')}.png`);
-      }, index * 500);
-    });
-  }, [gallery, downloadPhoto]);
+    const imageData = canvas.toDataURL('image/jpeg', 0.9);
+    setCapturedImage(imageData);
 
-  const retakePhoto = useCallback(() => {
-    setCapturedPhoto(null);
-  }, []);
-
-  const getFilterStyle = (effectId) => {
-    const effect = effects.find(e => e.id === effectId);
-    return effect ? { filter: effect.filter } : {};
+    setTimeout(() => {
+      setIsFlashActive(false);
+      setIsCapturing(false);
+      setCurrentView('editor');
+    }, 300);
   };
 
-  useEffect(() => {
-    if (facingMode && !cameraStarted && currentPage === 'camera') {
-      startCamera();
+  const flipCamera = () => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCapturedImage(e.target.result);
+        setCurrentView('editor');
+      };
+      reader.readAsDataURL(file);
     }
-  }, [facingMode, startCamera, cameraStarted, currentPage]);
+  };
 
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, [stopCamera]);
-
-  const renderHomePage = () => (
-    <div className="text-center space-y-8">
-      <div className="mb-12">
-        <h1 className="text-6xl md:text-8xl font-bold text-white mb-6 bg-clip-text text-transparent bg-gradient-to-r from-pink-400 via-purple-500 to-cyan-400 animate-pulse">
-          📸 Photo Booth Pro
-        </h1>
-        <p className="text-xl text-gray-300 mb-8">Professional photo booth with amazing effects and frames</p>
-      </div>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
-        <div className="bg-gradient-to-br from-pink-500/20 to-purple-600/20 backdrop-blur-lg rounded-3xl p-6 border border-pink-500/20 hover:border-pink-400/40 transition-all duration-300 transform hover:scale-105">
-          <Camera size={48} className="mx-auto mb-4 text-pink-400" />
-          <h3 className="text-xl font-bold text-white mb-2">Smart Camera</h3>
-          <p className="text-gray-300 text-sm">High-quality camera with auto-focus and smart settings</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500/20 to-blue-600/20 backdrop-blur-lg rounded-3xl p-6 border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300 transform hover:scale-105">
-          <Sparkles size={48} className="mx-auto mb-4 text-purple-400" />
-          <h3 className="text-xl font-bold text-white mb-2">10+ Effects</h3>
-          <p className="text-gray-300 text-sm">Professional filters and effects for every mood</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-500/20 to-cyan-600/20 backdrop-blur-lg rounded-3xl p-6 border border-blue-500/20 hover:border-blue-400/40 transition-all duration-300 transform hover:scale-105">
-          <Image size={48} className="mx-auto mb-4 text-blue-400" />
-          <h3 className="text-xl font-bold text-white mb-2">Beautiful Frames</h3>
-          <p className="text-gray-300 text-sm">16+ themed frames for every occasion</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-cyan-500/20 to-green-600/20 backdrop-blur-lg rounded-3xl p-6 border border-cyan-500/20 hover:border-cyan-400/40 transition-all duration-300 transform hover:scale-105">
-          <Download size={48} className="mx-auto mb-4 text-cyan-400" />
-          <h3 className="text-xl font-bold text-white mb-2">Easy Download</h3>
-          <p className="text-gray-300 text-sm">Download individual photos or entire gallery</p>
-        </div>
-      </div>
-
-      <button
-        onClick={() => setCurrentPage('camera')}
-        className="bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500 hover:from-pink-600 hover:via-purple-700 hover:to-cyan-600 text-white px-12 py-4 rounded-full font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-2xl"
+  if (!cameraStarted) {
+    return (
+      <motion.div 
+        className="relative w-full h-screen overflow-hidden bg-gradient-to-br from-pink-400 via-purple-400 to-rose-500 flex items-center justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
       >
-        Start Photo Booth 🚀
-      </button>
-    </div>
-  );
-
-  const renderCameraPage = () => (
-    <div className="grid lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2">
-        <div className="bg-black/20 backdrop-blur-lg rounded-3xl p-6 border border-white/10">
-          <div className="relative aspect-video bg-black rounded-2xl overflow-hidden mb-6">
-            {capturedPhoto ? (
-              <img
-                src={capturedPhoto}
-                alt="Captured photo"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                  style={getFilterStyle(selectedEffect)}
-                />
-                {isCapturing && (
-                  <div className="absolute inset-0 bg-white animate-ping opacity-50 rounded-2xl" />
-                )}
-              </>
-            )}
-            
-            {!cameraStarted && !capturedPhoto && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  {error ? (
-                    <div className="mb-4">
-                      <p className="text-red-400 text-sm mb-4 max-w-sm">{error}</p>
-                      <button
-                        onClick={() => {
-                          setError(null);
-                          startCamera();
-                        }}
-                        className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-3 rounded-full font-semibold transition-all duration-200 transform hover:scale-105"
-                      >
-                        Try Again
-                      </button>
-                    </div>
-                  ) : loading ? (
-                    <div className="text-white">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-                      <p>Starting camera...</p>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={startCamera}
-                      disabled={loading}
-                      className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
-                    >
-                      Start Camera
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-4 justify-center">
-            {capturedPhoto ? (
-              <>
-                <button
-                  onClick={() => downloadPhoto(capturedPhoto)}
-                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full font-medium flex items-center gap-2 transition-all duration-200 transform hover:scale-105"
-                >
-                  <Download size={20} />
-                  Download
-                </button>
-                <button
-                  onClick={retakePhoto}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-full font-medium flex items-center gap-2 transition-all duration-200 transform hover:scale-105"
-                >
-                  <RotateCcw size={20} />
-                  Retake
-                </button>
-              </>
-            ) : cameraStarted ? (
-              <>
-                <button
-                  onClick={capturePhoto}
-                  disabled={isCapturing}
-                  className={`bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:transform-none ${
-                    isCapturing ? 'animate-pulse' : ''
-                  }`}
-                >
-                  <Camera size={24} className="inline mr-2" />
-                  {isCapturing ? 'Capturing...' : 'Capture Photo'}
-                </button>
-                <button
-                  onClick={switchCamera}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-full transition-all duration-200 transform hover:scale-105"
-                >
-                  <RotateCcw size={20} />
-                </button>
-              </>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div className="lg:col-span-1 space-y-6">
-        <div className="bg-black/20 backdrop-blur-lg rounded-3xl p-6 border border-white/10">
-          <h3 className="text-2xl font-bold text-white mb-6 text-center">Effects</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {effects.map((effect) => {
-              const Icon = effect.icon;
-              const isSelected = selectedEffect === effect.id;
-              
-              return (
-                <button
-                  key={effect.id}
-                  onClick={() => setSelectedEffect(effect.id)}
-                  className={`p-3 rounded-2xl border-2 transition-all duration-200 transform hover:scale-105 ${
-                    isSelected
-                      ? 'border-pink-500 bg-pink-500/20 text-pink-400'
-                      : 'border-white/20 bg-white/5 text-gray-300 hover:border-white/40 hover:bg-white/10'
-                  }`}
-                >
-                  <div className="flex flex-col items-center gap-1">
-                    <Icon size={20} />
-                    <span className="text-xs font-medium">{effect.name}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="bg-black/20 backdrop-blur-lg rounded-3xl p-6 border border-white/10">
-          <h3 className="text-lg font-bold text-white mb-4 text-center">Quick Frames</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setSelectedFrame('none')}
-              className={`p-3 rounded-xl border transition-all ${
-                selectedFrame === 'none'
-                  ? 'border-purple-500 bg-purple-500/20 text-purple-400'
-                  : 'border-white/20 bg-white/5 text-gray-300'
-              }`}
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          {sparkles.map((sparkle) => (
+            <motion.div
+              key={sparkle.id}
+              className="absolute text-white/20"
+              style={{
+                left: `${sparkle.left}%`,
+                fontSize: `${sparkle.size}px`,
+              }}
+              initial={{ y: '100vh', opacity: 0, rotate: 0 }}
+              animate={{ 
+                y: '-100vh', 
+                opacity: [0, 1, 1, 0],
+                rotate: 360 
+              }}
+              transition={{
+                duration: sparkle.duration,
+                delay: sparkle.delay,
+                repeat: Infinity,
+                ease: "linear"
+              }}
             >
-              None
-            </button>
-            <button
-              onClick={() => setSelectedFrame('birthday1')}
-              className={`p-3 rounded-xl border transition-all ${
-                selectedFrame === 'birthday1'
-                  ? 'border-yellow-500 bg-yellow-500/20 text-yellow-400'
-                  : 'border-white/20 bg-white/5 text-gray-300'
-              }`}
-            >
-              Birthday
-            </button>
-            <button
-              onClick={() => setSelectedFrame('wedding1')}
-              className={`p-3 rounded-xl border transition-all ${
-                selectedFrame === 'wedding1'
-                  ? 'border-yellow-600 bg-yellow-600/20 text-yellow-400'
-                  : 'border-white/20 bg-white/5 text-gray-300'
-              }`}
-            >
-              Wedding
-            </button>
-            <button
-              onClick={() => setSelectedFrame('fun1')}
-              className={`p-3 rounded-xl border transition-all ${
-                selectedFrame === 'fun1'
-                  ? 'border-cyan-500 bg-cyan-500/20 text-cyan-400'
-                  : 'border-white/20 bg-white/5 text-gray-300'
-              }`}
-            >
-              Neon
-            </button>
-          </div>
-          <button
-            onClick={() => setCurrentPage('frames')}
-            className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all"
-          >
-            More Frames →
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderFramesPage = () => (
-    <div className="space-y-8">
-      <div className="text-center">
-        <h2 className="text-4xl font-bold text-white mb-4">Choose Your Frame</h2>
-        <p className="text-gray-300">Select from our collection of beautiful frames</p>
-      </div>
-
-      {Object.entries(frames).map(([category, frameList]) => (
-        <div key={category} className="bg-black/20 backdrop-blur-lg rounded-3xl p-6 border border-white/10">
-          <h3 className="text-2xl font-bold text-white mb-6 capitalize flex items-center gap-2">
-            {category === 'birthday' && <Gift className="text-yellow-400" />}
-            {category === 'wedding' && <Crown className="text-yellow-400" />}
-            {category === 'nature' && <Sparkles className="text-green-400" />}
-            {category === 'fun' && <Zap className="text-cyan-400" />}
-            {category} Frames
-          </h3>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {frameList.map((frame) => (
-              <button
-                key={frame.id}
-                onClick={() => {
-                  setSelectedFrame(frame.id);
-                  setCurrentPage('camera');
-                }}
-                className={`aspect-square rounded-2xl border-2 transition-all duration-200 transform hover:scale-105 p-4 relative overflow-hidden ${
-                  selectedFrame === frame.id
-                    ? 'border-pink-500 bg-pink-500/20'
-                    : 'border-white/20 bg-white/5 hover:border-white/40'
-                }`}
-              >
-                <div className={`w-full h-full bg-gradient-to-br ${frame.color} rounded-lg flex items-center justify-center relative overflow-hidden`}>
-                  <div className="text-white text-sm font-medium text-center z-10">
-                    {frame.name}
-                  </div>
-                  
-                  {/* Frame preview patterns */}
-                  <div className="absolute inset-0">
-                    {frame.id.includes('birthday') && (
-                      <div className="absolute inset-2 border-4 border-yellow-400 rounded">
-                        <div className="absolute top-1 left-1 text-yellow-400">⭐</div>
-                        <div className="absolute top-1 right-1 text-yellow-400">🎉</div>
-                        <div className="absolute bottom-1 left-1 text-yellow-400">🎂</div>
-                        <div className="absolute bottom-1 right-1 text-yellow-400">🎈</div>
-                      </div>
-                    )}
-                    
-                    {frame.id.includes('wedding') && (
-                      <div className="absolute inset-2 border-4 border-yellow-200 rounded">
-                        <div className="absolute top-1 left-1 text-yellow-200">💍</div>
-                        <div className="absolute top-1 right-1 text-yellow-200">👑</div>
-                        <div className="absolute bottom-1 left-1 text-yellow-200">🌹</div>
-                        <div className="absolute bottom-1 right-1 text-yellow-200">✨</div>
-                      </div>
-                    )}
-                    
-                    {frame.id.includes('nature') && (
-                      <div className="absolute inset-2 border-4 border-green-400 rounded">
-                        <div className="absolute top-1 left-1 text-green-400">🌸</div>
-                        <div className="absolute top-1 right-1 text-green-400">🌿</div>
-                        <div className="absolute bottom-1 left-1 text-green-400">🌺</div>
-                        <div className="absolute bottom-1 right-1 text-green-400">🍀</div>
-                      </div>
-                    )}
-                    
-                    {frame.id.includes('fun') && (
-                      <div className="absolute inset-2 border-4 border-cyan-400 rounded">
-                        <div className="absolute top-1 left-1 text-cyan-400">🎵</div>
-                        <div className="absolute top-1 right-1 text-cyan-400">✨</div>
-                        <div className="absolute bottom-1 left-1 text-cyan-400">🕺</div>
-                        <div className="absolute bottom-1 right-1 text-cyan-400">💫</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {selectedFrame === frame.id && (
-                  <div className="absolute top-2 right-2 bg-pink-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">
-                    ✓
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-      
-      <div className="text-center">
-        <button
-          onClick={() => setCurrentPage('camera')}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-3 rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105"
-        >
-          Back to Camera
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderGalleryPage = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-4xl font-bold text-white mb-2">Photo Gallery</h2>
-          <p className="text-gray-300">{gallery.length} photos captured</p>
-        </div>
-        
-        {gallery.length > 0 && (
-          <button
-            onClick={downloadAllPhotos}
-            className="bg-gradient-to-r from-green-500 to-blue-500 text-white px-6 py-3 rounded-full font-semibold hover:from-green-600 hover:to-blue-600 transition-all transform hover:scale-105 flex items-center gap-2"
-          >
-            <Download size={20} />
-            Download All ({gallery.length})
-          </button>
-        )}
-      </div>
-
-      {gallery.length === 0 ? (
-        <div className="text-center py-16">
-          <Camera size={64} className="mx-auto text-gray-600 mb-4" />
-          <h3 className="text-xl text-gray-400 mb-2">No photos yet</h3>
-          <p className="text-gray-500 mb-6">Start capturing memories!</p>
-          <button
-            onClick={() => setCurrentPage('camera')}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-purple-700 transition-all"
-          >
-            Take First Photo
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {gallery.map((photo) => (
-            <div key={photo.id} className="bg-black/20 backdrop-blur-lg rounded-2xl p-4 border border-white/10 hover:border-white/20 transition-all transform hover:scale-105">
-              <img
-                src={photo.data}
-                alt="Gallery photo"
-                className="w-full aspect-video object-cover rounded-xl mb-3"
-              />
-              <div className="text-sm text-gray-300 mb-2">
-                <p>Effect: {effects.find(e => e.id === photo.effect)?.name || 'None'}</p>
-                <p>Frame: {photo.frame !== 'none' ? photo.frame : 'None'}</p>
-                <p>Taken: {photo.timestamp}</p>
-              </div>
-              <button
-                onClick={() => downloadPhoto(photo.data, `photo-${photo.id}.png`)}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-2 rounded-lg font-medium hover:from-blue-600 hover:to-purple-600 transition-all flex items-center justify-center gap-2"
-              >
-                <Download size={16} />
-                Download
-              </button>
-            </div>
+              ✨
+            </motion.div>
           ))}
         </div>
-      )}
-    </div>
-  );
+
+        {/* Floating Hearts */}
+        <div className="absolute inset-0">
+          {[...Array(8)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute text-pink-200/30 text-4xl"
+              style={{
+                left: `${20 + i * 10}%`,
+                top: `${20 + (i % 2) * 40}%`,
+              }}
+              animate={{
+                y: [-20, 20, -20],
+                rotate: [0, 360],
+                scale: [1, 1.2, 1]
+              }}
+              transition={{
+                duration: 3 + i * 0.2,
+                delay: i * 0.3,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              💖
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="relative z-10 text-center">
+          <motion.div
+            className="mb-8"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", damping: 10, delay: 0.2 }}
+          >
+            <motion.div
+              animate={{ 
+                rotate: [0, 10, -10, 0],
+                scale: [1, 1.1, 1] 
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="text-8xl mb-4"
+            >
+              📸
+            </motion.div>
+            <h2 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: 'cursive' }}>
+              Ready for Magic?
+            </h2>
+            <p className="text-white/80">Let's capture your beautiful moments</p>
+          </motion.div>
+
+          <motion.button
+            onClick={() => setCameraStarted(true)}
+            className="group bg-gradient-to-r from-white to-pink-50 text-gray-800 px-10 py-5 rounded-full text-xl font-semibold shadow-2xl flex items-center space-x-4 mx-auto overflow-hidden relative"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            initial={{ scale: 0, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            transition={{ type: "spring", damping: 15, delay: 0.5 }}
+          >
+            {/* Animated background */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-pink-100 to-rose-100 opacity-0 group-hover:opacity-100"
+              transition={{ duration: 0.3 }}
+            />
+            
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="relative z-10"
+            >
+              <Play size={28} />
+            </motion.div>
+            <span className="relative z-10">Allow Camera Access</span>
+            
+            {/* Sparkle effect */}
+            <motion.div className="absolute inset-0 opacity-0 group-hover:opacity-100">
+              {[...Array(4)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute text-yellow-400"
+                  style={{
+                    left: `${25 + i * 15}%`,
+                    top: `${30 + (i % 2) * 40}%`,
+                  }}
+                  animate={{
+                    scale: [0, 1, 0],
+                    rotate: [0, 180]
+                  }}
+                  transition={{
+                    duration: 1,
+                    delay: i * 0.2,
+                    repeat: Infinity
+                  }}
+                >
+                  ✨
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.button>
+          
+          <motion.button
+            onClick={() => setCurrentView('landing')}
+            className="mt-6 text-white/80 underline hover:text-white transition-colors text-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            whileHover={{ scale: 1.05 }}
+          >
+            ← Back to Home
+          </motion.button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Navigation */}
-        <nav className="mb-8">
-          <div className="bg-black/20 backdrop-blur-lg rounded-2xl p-4 border border-white/10">
-            <div className="flex justify-center space-x-2">
-              {pages.map((page) => {
-                const Icon = page.icon;
-                const isActive = currentPage === page.id;
-                
-                return (
-                  <button
-                    key={page.id}
-                    onClick={() => setCurrentPage(page.id)}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all duration-200 ${
-                      isActive
-                        ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <Icon size={20} />
-                    <span className="hidden sm:inline">{page.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </nav>
+    <motion.div 
+      className="relative w-full h-screen overflow-hidden bg-gradient-to-br from-pink-500 via-purple-500 to-rose-600"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Enhanced Flash Overlay */}
+      <AnimatePresence>
+        {isFlashActive && (
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-yellow-200 via-white to-pink-200 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.95 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          />
+        )}
+      </AnimatePresence>
 
-        {/* Page Content /}
-        jai
-        <main>
-          {currentPage === 'home' && renderHomePage()}
-          {currentPage === 'camera' && renderCameraPage()}
-          {currentPage === 'frames' && renderFramesPage()}
-          {currentPage === 'gallery' && renderGalleryPage()}
-        </main>
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        {sparkles.map((sparkle) => (
+          <motion.div
+            key={sparkle.id}
+            className="absolute text-white/10"
+            style={{
+              left: `${sparkle.left}%`,
+              fontSize: `${sparkle.size}px`,
+            }}
+            initial={{ y: '100vh', opacity: 0 }}
+            animate={{ 
+              y: '-100vh', 
+              opacity: [0, 0.5, 0.5, 0],
+              rotate: [0, 360] 
+            }}
+            transition={{
+              duration: sparkle.duration,
+              delay: sparkle.delay,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          >
+            ✨
+          </motion.div>
+        ))}
       </div>
 
-      {/* Hidden canvases */}
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
-      <canvas ref={frameCanvasRef} style={{ display: 'none' }} />
+      {/* Back Button */}
+      <motion.button
+        onClick={() => setCurrentView('landing')}
+        className="absolute top-6 left-6 z-30 bg-white/30 backdrop-blur-sm p-4 rounded-full text-white shadow-xl border border-white/20"
+        whileHover={{ scale: 1.1, backgroundColor: "rgba(255, 255, 255, 0.4)" }}
+        whileTap={{ scale: 0.9 }}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <X size={24} />
+      </motion.button>
+
+      {/* Enhanced Title */}
+      <motion.div 
+        className="absolute top-6 left-1/2 transform -translate-x-1/2 z-30"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30">
+          <motion.h2 
+            className="text-xl font-bold text-white flex items-center space-x-2"
+            style={{ fontFamily: 'cursive' }}
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <span>📸</span>
+            <span>Love Camera</span>
+            <span>✨</span>
+          </motion.h2>
+        </div>
+      </motion.div>
+
+      {/* Video Container */}
+      <div className="relative w-full h-full flex items-center justify-center p-4">
+        <motion.div 
+          className="relative w-full max-w-lg h-full max-h-screen"
+          initial={{ scale: 0.8, rotateY: 180 }}
+          animate={{ scale: 1, rotateY: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          {/* Decorative Frame */}
+          <div className="absolute inset-0 bg-gradient-to-r from-pink-400 via-purple-400 to-rose-400 rounded-3xl p-1 shadow-2xl">
+            <div className="w-full h-full bg-white rounded-3xl p-2">
+              <motion.video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover rounded-2xl shadow-inner"
+                style={{ 
+                  filter: filters.find(f => f.id === selectedFilter)?.filter || 'none',
+                  transform: facingMode === 'user' ? 'scaleX(-1)' : 'none'
+                }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+              />
+            </div>
+          </div>
+          
+          {/* Filter Carousel Overlay */}
+          <div className="absolute top-4 left-0 right-0">
+            <FilterCarousel />
+          </div>
+
+          {/* Enhanced Camera Controls */}
+          <motion.div 
+            className="absolute bottom-8 left-0 right-0 flex justify-center items-center space-x-8"
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.7, type: "spring" }}
+          >
+            {/* Upload Button */}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+              id="camera-file-upload"
+            />
+            <label htmlFor="camera-file-upload">
+              <motion.div
+                className="bg-white/90 backdrop-blur-sm p-4 rounded-full text-gray-700 shadow-xl border-2 border-white cursor-pointer"
+                whileHover={{ scale: 1.15, backgroundColor: "rgba(255, 255, 255, 1)" }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Upload size={28} />
+              </motion.div>
+            </label>
+
+            {/* Capture Button */}
+            <motion.button
+              onClick={capturePhoto}
+              disabled={isCapturing}
+              className="relative bg-gradient-to-r from-pink-500 to-rose-500 p-8 rounded-full text-white shadow-2xl disabled:opacity-50 border-4 border-white/50"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              animate={isCapturing ? { 
+                rotate: 360,
+                scale: [1, 1.2, 1] 
+              } : { 
+                rotate: 0,
+                scale: [1, 1.05, 1] 
+              }}
+              transition={{ 
+                rotate: { duration: 0.3 },
+                scale: { duration: 2, repeat: Infinity }
+              }}
+            >
+              <Camera size={40} />
+              
+              {/* Ripple Effect */}
+              <motion.div
+                className="absolute inset-0 rounded-full border-2 border-white/30"
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [1, 0, 1]
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            </motion.button>
+
+            {/* Flip Camera Button */}
+            <motion.button
+              onClick={flipCamera}
+              className="bg-white/90 backdrop-blur-sm p-4 rounded-full text-gray-700 shadow-xl border-2 border-white"
+              whileHover={{ scale: 1.15, backgroundColor: "rgba(255, 255, 255, 1)" }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <RotateCcw size={28} />
+            </motion.button>
+          </motion.div>
+
+          {/* Capture Counter */}
+          <AnimatePresence>
+            {isCapturing && (
+              <motion.div
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+              >
+                <div className="bg-white/90 rounded-full p-8 shadow-2xl">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 0.3, repeat: 1 }}
+                    className="text-6xl"
+                  >
+                    📸
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </div>
+
+      <canvas ref={canvasRef} className="hidden" />
+    </motion.div>
+  );
+};
+
+// Filter Carousel Component
+const FilterCarousel = () => {
+  const { selectedFilter, setSelectedFilter } = usePhotoBooth();
+
+  return (
+    <motion.div 
+      className="flex space-x-2 px-4 overflow-x-auto scrollbar-hide"
+      style={{ 
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none'
+      }}
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 0.3 }}
+    >
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+      
+      {filters.map((filter, index) => (
+        <motion.button
+          key={filter.id}
+          onClick={() => setSelectedFilter(filter.id)}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+            selectedFilter === filter.id
+              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg scale-105'
+              : 'bg-white/30 backdrop-blur-sm text-white hover:bg-white/40'
+          }`}
+          whileHover={{ scale: selectedFilter === filter.id ? 1.05 : 1.02 }}
+          whileTap={{ scale: 0.95 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 + index * 0.05 }}
+        >
+          <span className="text-base">{filter.emoji}</span>
+          <span>{filter.name}</span>
+        </motion.button>
+      ))}
+    </motion.div>
+  );
+};
+
+// Enhanced Love Note Input Component
+const LoveNoteInput = () => {
+  const { loveNote, setLoveNote } = usePhotoBooth();
+
+  return (
+    <motion.div 
+      className="mt-6 w-full max-w-md"
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 0.5 }}
+    >
+      <div className="relative">
+        <motion.div
+          className="absolute -top-8 left-4 flex items-center space-x-2"
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          >
+            <MessageCircle size={16} className="text-pink-500" />
+          </motion.div>
+          <span className="text-sm font-medium text-gray-600">Add your love message</span>
+        </motion.div>
+        
+        <motion.input
+          type="text"
+          placeholder="Write your love message... 💕"
+          value={loveNote}
+          onChange={(e) => setLoveNote(e.target.value)}
+          className="w-full px-6 py-4 rounded-xl border-2 border-pink-200 focus:border-pink-400 outline-none bg-white/90 backdrop-blur-sm text-gray-700 placeholder-gray-500 shadow-lg transition-all duration-300"
+          style={{ fontFamily: 'cursive' }}
+          whileFocus={{ scale: 1.02 }}
+        />
+        
+        <motion.div 
+          className="absolute right-4 top-1/2 transform -translate-y-1/2"
+          animate={{ 
+            scale: [1, 1.2, 1],
+            rotate: [0, 5, -5, 0] 
+          }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <span className="text-pink-400 text-xl">💕</span>
+        </motion.div>
+        
+        {/* Character counter */}
+        <motion.div 
+          className="absolute -bottom-6 right-2 text-xs text-gray-400"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: loveNote.length > 0 ? 1 : 0.5 }}
+        >
+          {loveNote.length}/100
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Canvas Editor Component
+const CanvasEditor = () => {
+  const canvasRef = useRef(null);
+  const { 
+    capturedImage, 
+    selectedFilter, 
+    stickers, 
+    setStickers,
+    loveNote,
+    setCurrentView 
+  } = usePhotoBooth();
+
+  const handleCanvasClick = (event) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    
+    const newMarker = {
+      id: Date.now(),
+      x,
+      y,
+      timestamp: new Date().toLocaleTimeString(),
+      type: 'marker'
+    };
+    
+    setStickers(prev => [...prev, newMarker]);
+  };
+
+  return (
+    <motion.div 
+      className="relative w-full h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-rose-100 overflow-hidden"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Enhanced Header */}
+      <motion.div 
+        className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <motion.button
+          onClick={() => setCurrentView('camera')}
+          className="bg-white/80 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white/90 transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <X size={20} />
+        </motion.button>
+        
+        <motion.h1 
+          className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent"
+          style={{ fontFamily: 'cursive' }}
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          Love Booth ✨
+        </motion.h1>
+        
+        <DownloadButton />
+      </motion.div>
+
+      {/* Main Canvas Area */}
+      <div className="flex flex-col items-center justify-center h-full pt-20 pb-4 px-4">
+        <motion.div 
+          className="relative max-w-md w-full bg-white rounded-xl shadow-2xl overflow-hidden"
+          initial={{ scale: 0.8, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          transition={{ delay: 0.3, type: "spring", damping: 20 }}
+        >
+          <div 
+            ref={canvasRef}
+            className="relative w-full aspect-[3/4] cursor-crosshair overflow-hidden"
+            onClick={handleCanvasClick}
+          >
+            {capturedImage && (
+              <img
+              src={capturedImage}
+              alt="Captured"
+              className="w-full h-full object-cover"
+              style={{ 
+                filter: filters.find(f => f.id === selectedFilter)?.filter || 'none',
+                ...(frameStyles[selectedFilter] || {})
+              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            />
+            )}
+            
+            {/* Stickers and Markers */}
+            <AnimatePresence>
+              {stickers.map((sticker, index) => (
+                <motion.div
+                  key={sticker.id}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+                  style={{ 
+                    left: `${sticker.x}%`, 
+                    top: `${sticker.y}%`
+                  }}
+                  initial={{ scale: 0, rotate: 180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  exit={{ scale: 0, rotate: 180 }}
+                  whileHover={{ scale: 1.3 }}
+                  drag
+                  dragMomentum={false}
+                  onDoubleClick={() => setStickers(prev => prev.filter(s => s.id !== sticker.id))}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  {sticker.type === 'marker' ? (
+                    <div className="bg-gradient-to-r from-yellow-300 to-yellow-400 px-2 py-1 rounded text-xs font-medium shadow-lg border-2 border-yellow-500">
+                      {sticker.timestamp}
+                    </div>
+                  ) : (
+                    <span className="text-2xl drop-shadow-lg">{sticker.emoji}</span>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
+        {/* Enhanced Sticker Panel */}
+        <StickerPanel />
+        
+        {/* Enhanced Love Note Input - Fixed */}
+        <LoveNoteInput />
+      </div>
+    </motion.div>
+  );
+};
+
+// Enhanced Sticker Panel with Categories and Auto-Selection
+const StickerPanel = () => {
+  const { setStickers, selectedFilter } = usePhotoBooth();
+  const [activeCategory, setActiveCategory] = useState('general');
+
+  // Get stickers based on selected filter or active category
+  const getRelevantStickers = () => {
+    const filterCategories = {
+      'birthday': 'birthday',
+      'party': 'party', 
+      'wedding': 'wedding',
+      'anniversary': 'love',
+      'romantic': 'love',
+      'friendship': 'general',
+      'graduation': 'graduation'
+    };
+    
+    const category = filterCategories[selectedFilter] || activeCategory;
+    let relevantStickers = stickerPacks.filter(sticker => 
+      sticker.category === category
+    );
+
+    // If no specific stickers found, add some general ones
+    if (relevantStickers.length < 4) {
+      const generalStickers = stickerPacks.filter(s => s.category === 'general');
+      relevantStickers = [...relevantStickers, ...generalStickers].slice(0, 8);
+    }
+
+    return relevantStickers;
+  };
+
+  const addSticker = (sticker) => {
+    const newSticker = {
+      ...sticker,
+      id: Date.now() + Math.random(),
+      x: 20 + Math.random() * 60, // Better positioning
+      y: 20 + Math.random() * 60,
+    };
+    setStickers(prev => [...prev, newSticker]);
+  };
+
+  const categories = [
+    { id: 'general', name: 'General', emoji: '✨' },
+    { id: 'love', name: 'Love', emoji: '💕' },
+    { id: 'birthday', name: 'Birthday', emoji: '🎂' },
+    { id: 'party', name: 'Party', emoji: '🎉' },
+    { id: 'wedding', name: 'Wedding', emoji: '💒' },
+    { id: 'graduation', name: 'Graduation', emoji: '🎓' }
+  ];
+
+  const relevantStickers = getRelevantStickers();
+  const isAutoCategory = ['birthday', 'party', 'wedding', 'anniversary', 'romantic', 'graduation'].includes(selectedFilter);
+
+  return (
+    <motion.div 
+      className="mt-6 w-full max-w-md"
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 0.4 }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-2">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <Sparkles size={16} className="text-pink-500" />
+          </motion.div>
+          <span className="text-sm font-medium text-gray-600">
+            {isAutoCategory ? 
+              `${filters.find(f => f.id === selectedFilter)?.name} Stickers` : 
+              'Add Stickers'
+            }
+          </span>
+        </div>
+        
+        {/* Category Selector - only show if not auto-selected by filter */}
+        {!isAutoCategory && (
+          <select
+            value={activeCategory}
+            onChange={(e) => setActiveCategory(e.target.value)}
+            className="text-xs bg-white/80 border border-pink-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-pink-300"
+          >
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>
+                {cat.emoji} {cat.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+      
+      <motion.div 
+        className="grid grid-cols-4 gap-3 p-4 bg-white/70 backdrop-blur-sm rounded-xl shadow-lg min-h-[120px]"
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        <AnimatePresence mode="wait">
+          {relevantStickers.length > 0 ? (
+            relevantStickers.map((sticker, index) => (
+              <motion.button
+                key={`${sticker.id}-${selectedFilter}-${activeCategory}`}
+                onClick={() => addSticker(sticker)}
+                className="text-3xl p-3 rounded-xl hover:bg-white/80 transition-all duration-300 transform hover:scale-110 flex items-center justify-center"
+                whileHover={{ scale: 1.2, rotate: 5 }}
+                whileTap={{ scale: 0.8 }}
+                initial={{ scale: 0, rotate: 180, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                exit={{ scale: 0, rotate: -180, opacity: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                {sticker.emoji}
+              </motion.button>
+            ))
+          ) : (
+            <motion.div 
+              className="col-span-4 flex items-center justify-center text-gray-500 text-sm py-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              No stickers available for this category
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Quick Add Popular Stickers */}
+      {relevantStickers.length > 0 && (
+        <motion.div 
+          className="mt-3 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+        >
+          <span className="text-xs text-gray-500">Tap any sticker to add • Double-tap placed stickers to remove</span>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+};
+
+// Save Confirmation Modal
+const SaveConfirmationModal = ({ isOpen, onClose, onConfirm, onDownload }) => {
+  if (!isOpen) return null;
+
+  return (
+    <motion.div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl"
+        initial={{ scale: 0.5, rotate: -10 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", damping: 15 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="text-center">
+          <motion.div
+            className="text-6xl mb-4"
+            animate={{ 
+              rotate: [0, 10, -10, 0],
+              scale: [1, 1.1, 1] 
+            }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            💾
+          </motion.div>
+          
+          <h3 className="text-2xl font-bold text-gray-800 mb-2" style={{ fontFamily: 'cursive' }}>
+            Save Your Memory
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Would you like to save this beautiful moment?
+          </p>
+          
+          <div className="space-y-3">
+            <motion.button
+              onClick={onConfirm}
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-4 rounded-xl font-semibold shadow-lg flex items-center justify-center space-x-2"
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <span>💾</span>
+              <span>Save Photo</span>
+            </motion.button>
+            
+            <motion.button
+              onClick={onDownload}
+              className="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white py-4 rounded-xl font-semibold shadow-lg flex items-center justify-center space-x-2"
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Download size={18} />
+              <span>Direct Download</span>
+            </motion.button>
+            
+            <motion.button
+              onClick={onClose}
+              className="w-full bg-gray-200 text-gray-700 py-3 rounded-xl font-medium"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Cancel
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+const PolaroidPreview = ({ imageData, filter, stickers, loveNote, onClose }) => {
+  const currentDate = new Date().toLocaleDateString();
+  const currentTime = new Date().toLocaleTimeString();
+
+  return (
+    <motion.div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="relative bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full"
+        initial={{ scale: 0.5, rotate: -10 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", damping: 15 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative">
+          <div className="relative w-full aspect-square overflow-hidden rounded-lg shadow-inner">
+            <img
+              src={imageData}
+              alt="Polaroid"
+              className="w-full h-full object-cover"
+              style={{ filter: filters.find(f => f.id === filter)?.filter || 'none' }}
+            />
+            
+            {stickers.map((sticker) => (
+              <div
+                key={sticker.id}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2"
+                style={{ 
+                  left: `${sticker.x}%`, 
+                  top: `${sticker.y}%`
+                }}
+              >
+                {sticker.type === 'marker' ? (
+                  <div className="bg-yellow-300 px-2 py-1 rounded text-xs font-medium shadow border border-yellow-400">
+                    {sticker.timestamp}
+                  </div>
+                ) : (
+                  <span className="text-lg drop-shadow">{sticker.emoji}</span>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <div className="bg-white p-4 text-center">
+            <div className="text-xs text-gray-500 mb-2 flex items-center justify-center space-x-2">
+              <span>{currentDate}</span>
+              <span>•</span>
+              <span>{currentTime}</span>
+            </div>
+            <div 
+              className="text-base text-gray-700 font-medium"
+              style={{ fontFamily: 'cursive' }}
+            >
+              {loveNote || 'Made with love 💕'}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+
+
+// Main App Component
+const App = () => {
+  const { currentView } = usePhotoBooth();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-200 via-purple-200 to-rose-200">
+      <AnimatePresence mode="wait">
+        {currentView === 'landing' && (
+          <motion.div key="landing">
+            <LandingScreen />
+          </motion.div>
+        )}
+        {currentView === 'camera' && (
+          <motion.div key="camera">
+            <CameraFullScreen />
+          </motion.div>
+        )}
+        {currentView === 'editor' && (
+          <motion.div key="editor">
+            <CanvasEditor />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-export default PhotoBooth;
+// Root Component with Provider
+export default function PhotoBoothApp() {
+  return (
+    <PhotoBoothProvider>
+      <App />
+    </PhotoBoothProvider>
+  );
+}
