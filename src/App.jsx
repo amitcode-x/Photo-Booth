@@ -252,7 +252,9 @@ const filters = [
   { id: 'graduation', name: 'Graduation', filter: 'contrast(1.2) saturate(1.1) brightness(1.1)', emoji: '🎓' }
 ];
 
-// Enhanced Frame System with automatic application
+
+
+// Enhanced Frame System with automatic application for ALL filters
 const frameStyles = {
   none: {
     border: 'none',
@@ -265,60 +267,96 @@ const frameStyles = {
     borderRadius: '15px',
     background: `
       linear-gradient(white, white) padding-box,
-      linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #45b7d1) border-box
+      linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #45b7d1, #ff6b6b) border-box
     `,
-    boxShadow: '0 0 30px rgba(255, 215, 0, 0.3), inset 0 0 30px rgba(255, 215, 0, 0.1)'
+    boxShadow: '0 0 30px rgba(255, 215, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.1)'
   },
   party: {
     border: '6px solid transparent',
-    borderRadius: '10px',
+    borderRadius: '12px',
     background: `
       linear-gradient(white, white) padding-box,
-      linear-gradient(45deg, #ff0080, #ff8c00, #ffd700, #ff0080) border-box
+      linear-gradient(45deg, #ff0080, #ff8c00, #ffd700, #00ff80, #0080ff, #ff0080) border-box
     `,
-    boxShadow: '0 0 25px rgba(255, 0, 128, 0.4)'
+    boxShadow: '0 0 25px rgba(255, 0, 128, 0.6), 0 0 50px rgba(255, 140, 0, 0.3)'
   },
   wedding: {
     border: '10px solid #ffffff',
     borderRadius: '20px',
-    background: 'linear-gradient(45deg, rgba(255, 255, 255, 0.2), rgba(248, 250, 252, 0.1))',
-    boxShadow: '0 0 40px rgba(255, 255, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2)'
+    background: 'linear-gradient(45deg, rgba(255, 255, 255, 0.3), rgba(248, 250, 252, 0.2))',
+    boxShadow: '0 0 40px rgba(255, 255, 255, 0.8), inset 0 0 30px rgba(255, 255, 255, 0.3), 0 0 80px rgba(255, 255, 255, 0.4)'
   },
   anniversary: {
     border: '8px solid transparent',
     borderRadius: '25px',
     background: `
       linear-gradient(white, white) padding-box,
-      linear-gradient(45deg, #ff69b4, #ff1493, #dc143c, #ff69b4) border-box
+      linear-gradient(45deg, #ff69b4, #ff1493, #dc143c, #ff69b4, #ffb6c1) border-box
     `,
-    boxShadow: '0 0 35px rgba(255, 105, 180, 0.5)'
+    boxShadow: '0 0 35px rgba(255, 105, 180, 0.7), inset 0 0 20px rgba(255, 105, 180, 0.2)'
   },
   friendship: {
     border: '6px solid transparent',
     borderRadius: '12px',
     background: `
       linear-gradient(white, white) padding-box,
-      linear-gradient(45deg, #32cd32, #00fa9a, #7fffd4, #32cd32) border-box
+      linear-gradient(45deg, #32cd32, #00fa9a, #7fffd4, #90ee90, #32cd32) border-box
     `,
-    boxShadow: '0 0 25px rgba(50, 205, 50, 0.4)'
+    boxShadow: '0 0 25px rgba(50, 205, 50, 0.5), 0 0 50px rgba(127, 255, 212, 0.3)'
   },
   graduation: {
     border: '8px solid transparent',
     borderRadius: '15px',
     background: `
       linear-gradient(white, white) padding-box,
-      linear-gradient(45deg, #4169e1, #1e90ff, #00bfff, #4169e1) border-box
+      linear-gradient(45deg, #4169e1, #1e90ff, #00bfff, #87ceeb, #4169e1) border-box
     `,
-    boxShadow: '0 0 30px rgba(65, 105, 225, 0.4)'
+    boxShadow: '0 0 30px rgba(65, 105, 225, 0.6), inset 0 0 20px rgba(30, 144, 255, 0.2)'
   },
   romantic: {
     border: '6px solid transparent',
     borderRadius: '20px',
     background: `
       linear-gradient(white, white) padding-box,
-      linear-gradient(45deg, #ff69b4, #ff1493, #ff69b4) border-box
+      linear-gradient(45deg, #ff69b4, #ffb6c1, #ffc0cb, #ff69b4) border-box
     `,
-    boxShadow: '0 0 25px rgba(255, 105, 180, 0.3)'
+    boxShadow: '0 0 25px rgba(255, 105, 180, 0.4), inset 0 0 15px rgba(255, 182, 193, 0.2)'
+  },
+  soft: {
+    border: '5px solid transparent',
+    borderRadius: '18px',
+    background: `
+      linear-gradient(white, white) padding-box,
+      linear-gradient(45deg, #ffc0cb, #f0e6ff, #e6f3ff, #fff0f5, #ffc0cb) border-box
+    `,
+    boxShadow: '0 0 20px rgba(255, 192, 203, 0.4), inset 0 0 15px rgba(240, 230, 255, 0.3)'
+  },
+  dreamy: {
+    border: '7px solid transparent',
+    borderRadius: '22px',
+    background: `
+      linear-gradient(white, white) padding-box,
+      linear-gradient(45deg, #e6e6fa, #f0f8ff, #f5f5dc, #fff8dc, #e6e6fa) border-box
+    `,
+    boxShadow: '0 0 30px rgba(230, 230, 250, 0.6), inset 0 0 20px rgba(240, 248, 255, 0.4)'
+  },
+  vintage: {
+    border: '8px solid transparent',
+    borderRadius: '10px',
+    background: `
+      linear-gradient(white, white) padding-box,
+      linear-gradient(45deg, #daa520, #cd853f, #d2691e, #daa520) border-box
+    `,
+    boxShadow: '0 0 25px rgba(218, 165, 32, 0.5), inset 0 0 15px rgba(205, 133, 63, 0.3)'
+  },
+  warm: {
+    border: '6px solid transparent',
+    borderRadius: '14px',
+    background: `
+      linear-gradient(white, white) padding-box,
+      linear-gradient(45deg, #ff8c00, #ffa500, #ffb347, #ff8c00) border-box
+    `,
+    boxShadow: '0 0 25px rgba(255, 140, 0, 0.5), inset 0 0 15px rgba(255, 165, 0, 0.2)'
   }
 };
 const stickerPacks = [
@@ -1299,10 +1337,14 @@ const StickerPanel = () => {
       'birthday': 'birthday',
       'party': 'party', 
       'wedding': 'wedding',
-      'anniversary': 'love',
+      'anniversary': 'anniversary',
       'romantic': 'love',
-      'friendship': 'general',
-      'graduation': 'graduation'
+      'friendship': 'friendship',
+      'graduation': 'graduation',
+      'soft': 'soft',
+      'dreamy': 'soft',
+      'vintage': 'general',
+      'warm': 'general'
     };
     
     const category = filterCategories[selectedFilter] || activeCategory;
@@ -1310,13 +1352,13 @@ const StickerPanel = () => {
       sticker.category === category
     );
 
-    // If no specific stickers found, add some general ones
-    if (relevantStickers.length < 4) {
+    // If no specific stickers found or less than 8, add some general ones
+    if (relevantStickers.length < 8) {
       const generalStickers = stickerPacks.filter(s => s.category === 'general');
-      relevantStickers = [...relevantStickers, ...generalStickers].slice(0, 8);
+      relevantStickers = [...relevantStickers, ...generalStickers].slice(0, 12);
     }
 
-    return relevantStickers;
+    return relevantStickers.length > 0 ? relevantStickers : stickerPacks.filter(s => s.category === 'general').slice(0, 8);
   };
 
   const addSticker = (sticker) => {
@@ -1339,7 +1381,7 @@ const StickerPanel = () => {
   ];
 
   const relevantStickers = getRelevantStickers();
-  const isAutoCategory = ['birthday', 'party', 'wedding', 'anniversary', 'romantic', 'graduation'].includes(selectedFilter);
+  const isAutoCategory = ['birthday', 'party', 'wedding', 'anniversary', 'romantic', 'graduation', 'soft', 'dreamy', 'vintage', 'warm', 'friendship'].includes(selectedFilter);
 
   return (
     <motion.div 
